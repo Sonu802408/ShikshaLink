@@ -1,0 +1,12 @@
+{
+  "name": "shikshalink-root",
+  "version": "1.0.0",
+  "description": "ShikshaLink - Full-Stack Tutor-Parent Marketplace Website",
+  "scripts": {
+    "seed": "npm --prefix server run seed",
+    "test": "npm --prefix server test",
+    "server": "npm --prefix server start",
+    "client": "npm --prefix client run dev",
+    "build:client": "npm --prefix client run build"
+  }
+}
