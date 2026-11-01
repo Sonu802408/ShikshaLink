@@ -12,6 +12,7 @@ import { TuitionRequirement } from '../models/TuitionRequirement.js';
 import { Booking } from '../models/Booking.js';
 import { Review } from '../models/Review.js';
 import { PlatformSettings } from '../models/PlatformSettings.js';
+import { seedSonuTutor } from './seedSonuTutor.js';
 import { ROLES, TEACHING_MODES, BOOKING_STATUSES, REQUIREMENT_STATUSES } from './constants.js';
 
 dotenv.config();
@@ -44,7 +45,24 @@ const seedDatabase = async () => {
       singletonKey: 'global_settings',
       platformName: 'ShikshaLink',
       supportEmail: 'support@shikshalink.in',
-      supportPhone: '+91 98100 12345'
+      supportPhone: '+91 98100 12345',
+      feeSettings: {
+        parentBookingFee: 0,
+        commissionPercentage: 10,
+        isTrialFree: true
+      },
+      paymentSettings: {
+        businessDisplayName: 'ShikshaLink Education',
+        upiId: 'singhsonu883661@ybl',
+        upiPayeeName: 'Sonu Kumar',
+        upiQrCodeUrl: '/uploads/public/payments/phonepe-qr.png',
+        isOnlinePaymentEnabled: true,
+        isCashPaymentEnabled: false,
+        platformFeeType: 'percentage',
+        platformFeeValue: 10,
+        paymentInstructions: '1. Scan the UPI QR Code using PhonePe, Google Pay, Paytm, or BHIM.\n2. Complete payment for the exact total amount.\n3. Enter the 12-digit UTR/UPI Reference Number below.\n4. Admin will review and verify your payment to confirm the booking.',
+        paymentVerificationMethod: 'manual_upi'
+      }
     });
 
     // 2. Administrator
@@ -624,6 +642,9 @@ const seedDatabase = async () => {
         { status: BOOKING_STATUSES.CONFIRMED, changedBy: tutorCUser._id, notes: 'Confirmed with Google Meet link.' }
       ]
     });
+
+    // 6. Featured Tutor Profile - Sonu Kumar
+    await seedSonuTutor();
 
     console.log('[Seed] Database seeded successfully with realistic Delhi NCR / Mayur Vihar data!');
     console.log('[Seed] Summary:');

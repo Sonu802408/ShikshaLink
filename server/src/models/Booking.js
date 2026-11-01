@@ -83,6 +83,26 @@ const bookingSchema = new Schema(
         type: Number,
         default: 0
       },
+      baseAmount: {
+        type: Number,
+        default: 0
+      },
+      platformFee: {
+        type: Number,
+        default: 0
+      },
+      taxes: {
+        type: Number,
+        default: 0
+      },
+      travelCharge: {
+        type: Number,
+        default: 0
+      },
+      totalAmount: {
+        type: Number,
+        default: 0
+      },
       pricingUnit: {
         type: String,
         enum: ['per_hour', 'per_class', 'per_month', 'free_demo'],
@@ -94,8 +114,12 @@ const bookingSchema = new Schema(
       },
       paymentStatus: {
         type: String,
-        enum: ['not_applicable', 'pending', 'recorded_direct_to_tutor'],
+        enum: ['not_applicable', 'pending', 'awaiting_payment', 'pending_verification', 'paid', 'refund_pending', 'refunded', 'recorded_direct_to_tutor'],
         default: 'not_applicable'
+      },
+      payment: {
+        type: Schema.Types.ObjectId,
+        ref: 'Payment'
       }
     },
     status: {

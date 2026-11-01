@@ -7,6 +7,7 @@ import { NotificationProvider } from './context/NotificationContext';
 // Common
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
+import { SpecialOfferModal } from './components/common/SpecialOfferModal';
 
 // Public Pages
 import { Home } from './pages/Home';
@@ -28,6 +29,7 @@ import { ParentBookings } from './pages/parent/ParentBookings';
 import { SavedTutorsPage } from './pages/parent/SavedTutorsPage';
 import { ParentReviews } from './pages/parent/ParentReviews';
 import { ParentSupport } from './pages/parent/ParentSupport';
+import { CheckoutPage } from './pages/parent/CheckoutPage';
 
 // Tutor Dashboard Pages
 import { TutorDashboardLayout } from './pages/tutor/TutorDashboardLayout';
@@ -38,16 +40,20 @@ import { TutorBookings } from './pages/tutor/TutorBookings';
 import { TutorRequirementsFeed } from './pages/tutor/TutorRequirementsFeed';
 import { TutorQualificationsPage } from './pages/tutor/TutorQualificationsPage';
 import { TutorReviews } from './pages/tutor/TutorReviews';
+import { TutorRegistrationWizard } from './pages/tutor/TutorRegistrationWizard';
+import { TutorCartPage } from './pages/tutor/TutorCartPage';
 
 // Admin Dashboard Pages
 import { AdminDashboardLayout } from './pages/admin/AdminDashboardLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminManageTutors } from './pages/admin/AdminManageTutors';
 import { AdminVerificationQueue } from './pages/admin/AdminVerificationQueue';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminComplaints } from './pages/admin/AdminComplaints';
 import { AdminReviews } from './pages/admin/AdminReviews';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { AdminAuditLogs } from './pages/admin/AdminAuditLogs';
+import { AdminPayments } from './pages/admin/AdminPayments';
 
 // Route Guard component
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -83,6 +89,7 @@ export default function App() {
           <ToastProvider>
             <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
               <Navbar />
+              <SpecialOfferModal />
               <main className="flex-1">
                 <Routes>
                   {/* Public Routes */}
@@ -94,6 +101,16 @@ export default function App() {
                   <Route path="/become-a-tutor" element={<BecomeTutor />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+
+                  {/* Dedicated Responsive Checkout Route */}
+                  <Route
+                    path="/checkout/:bookingId"
+                    element={
+                      <ProtectedRoute allowedRoles={['parent', 'admin']}>
+                        <CheckoutPage />
+                      </ProtectedRoute>
+                    }
+                  />
 
                   {/* Parent Protected Routes */}
                   <Route
@@ -114,6 +131,16 @@ export default function App() {
                     <Route path="support" element={<ParentSupport />} />
                   </Route>
 
+                  {/* Standalone Tutor Registration Route */}
+                  <Route
+                    path="/tutor/register"
+                    element={
+                      <ProtectedRoute allowedRoles={['tutor']}>
+                        <TutorRegistrationWizard />
+                      </ProtectedRoute>
+                    }
+                  />
+
                   {/* Tutor Protected Routes */}
                   <Route
                     path="/tutor"
@@ -124,6 +151,7 @@ export default function App() {
                     }
                   >
                     <Route index element={<TutorDashboard />} />
+                    <Route path="cart" element={<TutorCartPage />} />
                     <Route path="bookings" element={<TutorBookings />} />
                     <Route path="requirements" element={<TutorRequirementsFeed />} />
                     <Route path="profile" element={<TutorProfileEdit />} />
@@ -142,6 +170,8 @@ export default function App() {
                     }
                   >
                     <Route index element={<AdminDashboard />} />
+                    <Route path="tutors" element={<AdminManageTutors />} />
+                    <Route path="payments" element={<AdminPayments />} />
                     <Route path="verification" element={<AdminVerificationQueue />} />
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="complaints" element={<AdminComplaints />} />

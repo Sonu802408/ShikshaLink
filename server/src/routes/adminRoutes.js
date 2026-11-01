@@ -12,7 +12,15 @@ import {
   moderateReview,
   getPlatformSettings,
   updatePlatformSettings,
-  getAuditLogs
+  getAuditLogs,
+  getAllTutorApplications,
+  getTutorApplicationById,
+  updateTutorApplicationStatus,
+  toggleTutorCartStatus,
+  editTutorByAdmin,
+  addExistingUserAsTutor,
+  inviteNewTutor,
+  permanentlyDeleteTutorApplication
 } from '../controllers/adminController.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { ROLES } from '../config/constants.js';
@@ -25,6 +33,16 @@ router.get('/metrics', getAdminMetrics);
 router.get('/verification-queue', getVerificationQueue);
 router.patch('/qualifications/:id/decide', decideQualification);
 router.patch('/tutors/:id/badges', updateTutorBadges);
+
+// Full Tutor Management
+router.get('/tutors', getAllTutorApplications);
+router.get('/tutors/:id/full', getTutorApplicationById);
+router.patch('/tutors/:id/status', updateTutorApplicationStatus);
+router.patch('/tutors/:id/cart-toggle', toggleTutorCartStatus);
+router.patch('/tutors/:id/edit', editTutorByAdmin);
+router.post('/tutors/create-from-user', addExistingUserAsTutor);
+router.post('/tutors/invite', inviteNewTutor);
+router.delete('/tutors/:id/permanent', permanentlyDeleteTutorApplication);
 
 router.get('/users', getAllUsers);
 router.patch('/users/:id/status', toggleUserStatus);

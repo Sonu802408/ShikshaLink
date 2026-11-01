@@ -49,9 +49,32 @@ const tuitionRequirementSchema = new Schema(
     teachingMode: {
       type: String,
       enum: Object.values(TEACHING_MODES),
-      required: [true, 'Teaching mode is required']
+      default: TEACHING_MODES.STUDENT_HOME
+    },
+    teachingModes: {
+      type: [String],
+      enum: Object.values(TEACHING_MODES),
+      default: [TEACHING_MODES.STUDENT_HOME]
+    },
+    medium: {
+      type: String,
+      default: 'English'
+    },
+    specialNeeds: {
+      type: String,
+      default: ''
+    },
+    studentCount: {
+      type: String,
+      enum: ['individual', 'group'],
+      default: 'individual'
     },
     schedule: {
+      tuitionType: {
+        type: String,
+        enum: ['regular', 'short_term', 'one_time', 'crash_course'],
+        default: 'regular'
+      },
       preferredDays: {
         type: [String],
         default: ['Monday', 'Wednesday', 'Friday']
@@ -59,6 +82,10 @@ const tuitionRequirementSchema = new Schema(
       timeRanges: {
         type: [String],
         default: ['Evening (4 PM - 7 PM)']
+      },
+      specificTimeSlots: {
+        type: [String],
+        default: []
       },
       preferredStartDate: {
         type: Date,
@@ -80,6 +107,8 @@ const tuitionRequirementSchema = new Schema(
     budget: {
       minBudget: { type: Number, default: 400, min: 0 },
       maxBudget: { type: Number, default: 800, min: 0 },
+      monthlyBudget: { type: Number, default: 0 },
+      isFlexible: { type: Boolean, default: false },
       budgetType: {
         type: String,
         enum: ['hourly', 'per_class', 'monthly'],

@@ -305,4 +305,66 @@ describe('ShikshaLink Backend Integration Tests', () => {
     assert.ok(res.body.config.classes.includes('Class 10'));
     assert.ok(res.body.config.boards.includes('CBSE'));
   });
+
+  test('14. Payment Order Creation: Generates order with transparent breakdown & UPI QR payload', async () => {
+    const sessionDate = new Date();
+    sessionDate.setDate(sessionDate.getDate() + 7);
+
+    // Create a regular paid booking
+    const bookingRes = await request(app)
+      .post('/api/bookings')
+      .set('Authorization', `Bearer ${parentToken}`)
+      .send({
+        tutorProfileId,
+        childId,
+        teachingMode: TEACHING_MODES.ONLINE,
+        bookingType: 'regular',
+        subject: 'Mathematics',
+        classGrade: 'Class 10',
+        sessionDate: sessionDate.toISOString(),
+        startTime: '10:00',
+        endTime: '11:30'
+      });
+
+    assert.equal(bookingRes.status, 201);
+    const newBookingId = bookingRes.body.booking._id;
+
+    // Create payment order
+    const orderRes = await request(app)
+      .post('/api/payments/create-order')
+      .set('Authorization', `Bearer ${parentToken}`)
+      .send({
+        bookingId: newBookingId,
+        paymentMethod: 'upi_qr'
+      });
+
+    assert.equal(orderRes.status, 200);
+    assert.ok(orderRes.body.order.orderId.startsWith('ORD_'));
+    assert.ok(orderRes.body.order.amount > 0);
+    assert.ok(orderRes.body.order.upiDetails.qrCodeData.startsWith('upi://pay?'));
+    assert.equal(orderRes.body.order.status, 'created');
+
+    // Test 15. Server-Side Verification: Verifies payment, marks booking confirmed & accrues tutor payout
+    const verifyRes = await request(app)
+      .post('/api/payments/verify')
+      .set('Authorization', `Bearer ${parentToken}`)
+      .send({
+        orderId: orderRes.body.order.orderId,
+        isSandboxSimulated: true
+      });
+
+    assert.equal(verifyRes.status, 200);
+    assert.equal(verifyRes.body.payment.status, 'paid');
+    assert.equal(verifyRes.body.booking.status, 'confirmed');
+
+    // Test 16. Tutor Earnings & Admin Ledger
+    const earningsRes = await request(app)
+      .get('/api/payments/tutor/earnings')
+      .set('Authorization', `Bearer ${tutorToken}`);
+
+    assert.equal(earningsRes.status, 200);
+    assert.ok(earningsRes.body.summary.totalGross > 0);
+    assert.ok(earningsRes.body.summary.totalNetEarned > 0);
+    assert.ok(earningsRes.body.payouts.length >= 1);
+  });
 });

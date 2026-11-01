@@ -43,8 +43,11 @@ export const Register = () => {
       });
 
       showToast(`Account created! Welcome to ShikshaLink, ${data.user.name}.`, 'success');
-      if (role === 'tutor') {
-        navigate('/tutor/profile');
+      const redirect = searchParams.get('redirect');
+      if (redirect) {
+        navigate(redirect);
+      } else if (role === 'tutor') {
+        navigate('/tutor/register');
       } else {
         navigate('/parent/children');
       }
@@ -57,7 +60,7 @@ export const Register = () => {
 
   return (
     <div className="min-h-[85vh] bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl max-w-lg w-full p-8 space-y-6">
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl card-3d max-w-lg w-full p-8 space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex items-center gap-2">
@@ -66,18 +69,18 @@ export const Register = () => {
             </div>
             <span className="text-xl font-bold text-slate-900 tracking-tight">ShikshaLink</span>
           </Link>
-          <h2 className="text-2xl font-extrabold text-slate-900 pt-1">Create your account</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900 pt-1 tracking-tight">Create your account</h2>
           <p className="text-xs text-slate-500">Join the transparent education marketplace</p>
         </div>
 
         {/* Role Toggle Switch */}
-        <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-2xl">
+        <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-2xl shadow-inner">
           <button
             type="button"
             onClick={() => setRole('parent')}
-            className={`py-2.5 rounded-xl font-bold text-xs transition-all ${
+            className={`py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
               role === 'parent'
-                ? 'bg-white text-slate-900 shadow-sm'
+                ? 'bg-white text-slate-900 shadow-md ring-1 ring-slate-200'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
@@ -86,9 +89,9 @@ export const Register = () => {
           <button
             type="button"
             onClick={() => setRole('tutor')}
-            className={`py-2.5 rounded-xl font-bold text-xs transition-all ${
+            className={`py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
               role === 'tutor'
-                ? 'bg-white text-teal-800 shadow-sm'
+                ? 'bg-white text-teal-800 shadow-md ring-1 ring-slate-200'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
@@ -103,14 +106,14 @@ export const Register = () => {
               Full Name
             </label>
             <div className="relative">
-              <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <User className="w-4 h-4 text-teal-600 absolute left-3.5 top-3" />
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder={role === 'parent' ? 'e.g. Rajesh Sharma' : 'e.g. Dr. Vikram Malhotra'}
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-teal-500"
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl input-3d text-xs font-medium"
               />
             </div>
           </div>
@@ -121,14 +124,14 @@ export const Register = () => {
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Mail className="w-4 h-4 text-teal-600 absolute left-3.5 top-3" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-teal-500"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl input-3d text-xs font-medium"
                 />
               </div>
             </div>
@@ -138,14 +141,14 @@ export const Register = () => {
                 Phone Number
               </label>
               <div className="relative">
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Phone className="w-4 h-4 text-teal-600 absolute left-3.5 top-3" />
                 <input
                   type="tel"
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 98100 12345"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-teal-500"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl input-3d text-xs font-medium"
                 />
               </div>
             </div>
@@ -157,11 +160,11 @@ export const Register = () => {
                 Primary Locality
               </label>
               <div className="relative">
-                <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <MapPin className="w-4 h-4 text-teal-600 absolute left-3.5 top-3" />
                 <select
                   value={locality}
                   onChange={(e) => setLocality(e.target.value)}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-teal-500 bg-white"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl input-3d text-xs font-medium bg-white"
                 >
                   <option value="Mayur Vihar Phase 1">Mayur Vihar Phase 1</option>
                   <option value="Mayur Vihar Phase 2">Mayur Vihar Phase 2</option>
@@ -181,14 +184,14 @@ export const Register = () => {
                 Password
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Lock className="w-4 h-4 text-teal-600 absolute left-3.5 top-3" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="At least 6 chars"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-teal-500"
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl input-3d text-xs font-medium"
                 />
               </div>
             </div>
@@ -197,7 +200,7 @@ export const Register = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3.5 rounded-xl btn-3d-primary text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? 'Creating Account...' : `Register as ${role === 'parent' ? 'Parent' : 'Tutor'}`}
             <ArrowRight className="w-4 h-4" />

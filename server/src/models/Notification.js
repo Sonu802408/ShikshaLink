@@ -21,7 +21,7 @@ const notificationSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ['booking_request', 'booking_status', 'requirement_match', 'verification', 'review', 'system', 'dispute'],
+      enum: ['booking_request', 'booking_status', 'requirement_match', 'verification', 'review', 'system', 'dispute', 'payment', 'payout'],
       default: 'system'
     },
     link: {

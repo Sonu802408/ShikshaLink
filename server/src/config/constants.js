@@ -62,13 +62,36 @@ export const BOOKING_STATUSES = {
   DRAFT: 'draft',
   PENDING: 'pending',
   ACCEPTED: 'accepted',
+  AWAITING_PAYMENT: 'awaiting_payment',
   ALTERNATIVE_PROPOSED: 'alternative_proposed',
   CONFIRMED: 'confirmed',
   DEMO_COMPLETED: 'demo_completed',
   IN_PROGRESS: 'in_progress',
   COMPLETED: 'completed',
+  CANCELLATION_REQUESTED: 'cancellation_requested',
   CANCELLED: 'cancelled',
+  REFUND_PENDING: 'refund_pending',
+  REFUNDED: 'refunded',
   DISPUTED: 'disputed'
+};
+
+export const PAYMENT_STATUSES = {
+  CREATED: 'created',
+  PAYMENT_PENDING: 'payment_pending',
+  PENDING_VERIFICATION: 'pending_verification',
+  PAID: 'paid',
+  FAILED: 'failed',
+  REJECTED: 'rejected',
+  REFUND_PENDING: 'refund_pending',
+  REFUNDED: 'refunded'
+};
+
+export const PAYOUT_STATUSES = {
+  ACCRUED: 'accrued',
+  PROCESSING: 'processing',
+  TRANSFERRED: 'transferred',
+  ON_HOLD: 'on_hold',
+  CANCELLED: 'cancelled'
 };
 
 export const REQUIREMENT_STATUSES = {

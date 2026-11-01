@@ -17,6 +17,7 @@ import supportRoutes from './routes/supportRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 
 dotenv.config();
 
@@ -56,13 +57,15 @@ app.use('/api/support', supportRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Error Handling Middleware
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+const isTest = process.env.NODE_ENV === 'test' || process.argv.some(a => a.includes('test'));
 
-if (process.env.NODE_ENV !== 'test') {
+if (!isTest) {
   connectDB().then(() => {
     app.listen(PORT, () => {
       console.log(`[ShikshaLink Server] Running in ${process.env.NODE_ENV || 'development'} on port ${PORT}`);

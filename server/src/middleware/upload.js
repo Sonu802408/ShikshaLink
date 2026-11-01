@@ -8,10 +8,12 @@ const __dirname = path.dirname(__filename);
 
 const publicDir = path.join(__dirname, '../../uploads/public');
 const privateDir = path.join(__dirname, '../../uploads/private');
+const paymentsDir = path.join(__dirname, '../../uploads/public/payments');
 
 // Ensure directories exist
 if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
 if (!fs.existsSync(privateDir)) fs.mkdirSync(privateDir, { recursive: true });
+if (!fs.existsSync(paymentsDir)) fs.mkdirSync(paymentsDir, { recursive: true });
 
 // Public storage for profile avatars
 const publicStorage = multer.diskStorage({
@@ -22,6 +24,30 @@ const publicStorage = multer.diskStorage({
     const ext = path.extname(file.originalname).toLowerCase();
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(null, `avatar-${uniqueSuffix}${ext}`);
+  }
+});
+
+// Storage for Payment QR codes
+const qrStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, paymentsDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `upi-qr-${uniqueSuffix}${ext}`);
+  }
+});
+
+// Storage for Payment Receipts
+const receiptStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, paymentsDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `receipt-${uniqueSuffix}${ext}`);
   }
 });
 
@@ -68,5 +94,17 @@ export const uploadAvatar = multer({
 export const uploadDocument = multer({
   storage: privateStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter: documentFilter
+});
+
+export const uploadPaymentQr = multer({
+  storage: qrStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: imageFilter
+});
+
+export const uploadReceipt = multer({
+  storage: receiptStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: documentFilter
 });

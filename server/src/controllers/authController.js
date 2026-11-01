@@ -54,9 +54,13 @@ export const register = async (req, res, next) => {
     } else {
       profile = await TutorProfile.create({
         user: user._id,
+        fullName: name,
         city: city || 'Delhi',
         primaryLocality: locality || 'Mayur Vihar Phase 1',
-        headline: `${name} - Academic Tutor`
+        headline: `${name} - Academic Tutor`,
+        profileStatus: 'draft',
+        isPublished: true,
+        registrationStep: 1
       });
     }
 

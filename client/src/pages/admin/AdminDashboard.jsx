@@ -54,12 +54,12 @@ export const AdminDashboard = () => {
       {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Pending Verifications */}
-        <div className="p-5 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-1">
+        <div className="stat-card-3d space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase tracking-wider">Pending Verifications</span>
             <ShieldCheck className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-black text-amber-600">
+          <div className="text-2xl sm:text-3xl font-black text-amber-600">
             {metrics?.pendingVerifications || 0}
           </div>
           <Link to="/admin/verification" className="text-[11px] font-bold text-amber-700 hover:underline inline-block pt-1">
@@ -68,12 +68,12 @@ export const AdminDashboard = () => {
         </div>
 
         {/* Total Users */}
-        <div className="p-5 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-1">
+        <div className="stat-card-3d space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase tracking-wider">Total Users</span>
             <Users className="w-4 h-4 text-teal-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900">
+          <div className="text-2xl sm:text-3xl font-black text-slate-900">
             {metrics?.totalUsers || 0}
           </div>
           <div className="text-[11px] text-slate-400 pt-1">
@@ -82,12 +82,12 @@ export const AdminDashboard = () => {
         </div>
 
         {/* Confirmed Bookings */}
-        <div className="p-5 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-1">
+        <div className="stat-card-3d space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase tracking-wider">Confirmed Bookings</span>
             <CalendarCheck className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-slate-900">
+          <div className="text-2xl sm:text-3xl font-black text-slate-900">
             {metrics?.confirmedBookings || 0}
           </div>
           <div className="text-[11px] text-slate-400 pt-1">
@@ -96,12 +96,12 @@ export const AdminDashboard = () => {
         </div>
 
         {/* Open Complaints */}
-        <div className="p-5 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-1">
+        <div className="stat-card-3d space-y-1">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase tracking-wider">Open Complaints</span>
             <LifeBuoy className="w-4 h-4 text-rose-500" />
           </div>
-          <div className="text-2xl font-black text-rose-600">
+          <div className="text-2xl sm:text-3xl font-black text-rose-600">
             {metrics?.openComplaints || 0}
           </div>
           <Link to="/admin/complaints" className="text-[11px] font-bold text-rose-700 hover:underline inline-block pt-1">
@@ -112,7 +112,7 @@ export const AdminDashboard = () => {
 
       {/* Quick Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-3">
+        <div className="card-3d p-6 sm:p-7 space-y-3">
           <div className="flex items-center gap-2 font-bold text-slate-900 text-base">
             <ShieldCheck className="w-5 h-5 text-teal-600" />
             Tutor Document Verification Queue
@@ -122,13 +122,13 @@ export const AdminDashboard = () => {
           </p>
           <Link
             to="/admin/verification"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl btn-3d-navy text-xs uppercase tracking-wider"
           >
-            Open Verification Queue <ArrowRight className="w-3.5 h-3.5" />
+            <span>Open Verification Queue</span> <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-2xs space-y-3">
+        <div className="card-3d p-6 sm:p-7 space-y-3">
           <div className="flex items-center gap-2 font-bold text-slate-900 text-base">
             <LifeBuoy className="w-5 h-5 text-sky-600" />
             Complaints, Disputes & Replacements
@@ -138,9 +138,9 @@ export const AdminDashboard = () => {
           </p>
           <Link
             to="/admin/complaints"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl btn-3d-navy text-xs uppercase tracking-wider"
           >
-            Manage Support Tickets <ArrowRight className="w-3.5 h-3.5" />
+            <span>Manage Support Tickets</span> <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>

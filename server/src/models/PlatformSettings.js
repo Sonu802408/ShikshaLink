@@ -46,7 +46,52 @@ const platformSettingsSchema = new Schema(
     },
     feeSettings: {
       parentBookingFee: { type: Number, default: 0 },
+      commissionPercentage: { type: Number, default: 10 },
       isTrialFree: { type: Boolean, default: true }
+    },
+    paymentSettings: {
+      businessDisplayName: {
+        type: String,
+        default: 'ShikshaLink Education'
+      },
+      upiId: {
+        type: String,
+        default: 'singhsonu883661@ybl'
+      },
+      upiPayeeName: {
+        type: String,
+        default: 'Sonu Kumar'
+      },
+      upiQrCodeUrl: {
+        type: String,
+        default: '/uploads/public/payments/phonepe-qr.png'
+      },
+      isOnlinePaymentEnabled: {
+        type: Boolean,
+        default: true
+      },
+      isCashPaymentEnabled: {
+        type: Boolean,
+        default: false
+      },
+      platformFeeType: {
+        type: String,
+        enum: ['fixed', 'percentage'],
+        default: 'percentage'
+      },
+      platformFeeValue: {
+        type: Number,
+        default: 10
+      },
+      paymentInstructions: {
+        type: String,
+        default: '1. Scan the UPI QR Code with PhonePe, Google Pay, Paytm, or BHIM.\n2. Complete payment for the exact total amount.\n3. Enter the 12-digit UTR/UPI Reference Number below.\n4. Our administration verifies it promptly and confirms your booking.'
+      },
+      paymentVerificationMethod: {
+        type: String,
+        enum: ['manual_upi', 'gateway'],
+        default: 'manual_upi'
+      }
     }
   },
   {

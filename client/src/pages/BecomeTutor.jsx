@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   GraduationCap,
   Award,
@@ -12,8 +12,33 @@ import {
   ArrowRight,
   Sparkles
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { apiRequest } from '../services/api';
 
 export const BecomeTutor = () => {
+  const { isAuthenticated, role } = useAuth();
+  const navigate = useNavigate();
+
+  const handleStartRegistration = async () => {
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/tutor/register&role=tutor');
+      return;
+    }
+    if (role === 'tutor') {
+      try {
+        const res = await apiRequest('/tutors/profile/me');
+        if (res.success && res.profile?.profileStatus === 'published') {
+          navigate('/tutor');
+        } else {
+          navigate('/tutor/register');
+        }
+      } catch (err) {
+        navigate('/tutor/register');
+      }
+    } else {
+      navigate('/tutor/register');
+    }
+  };
   return (
     <div className="min-h-screen bg-slate-50 py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
@@ -33,31 +58,31 @@ export const BecomeTutor = () => {
 
         {/* Benefits Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-2xl bg-teal-600 text-white flex items-center justify-center">
-              <DollarSign className="w-5 h-5" />
+          <div className="p-7 rounded-3xl bg-white border border-slate-200/90 stat-card-3d space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-teal-600 text-white flex items-center justify-center shadow-md shadow-teal-600/30">
+              <DollarSign className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-slate-900 text-base">You Set Your Own Fee</h3>
+            <h3 className="font-bold text-slate-900 text-lg">You Set Your Own Fee</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
               We never force a tutor to accept a parent's budget. Set your exact rate per hour, per class, or per monthly batch.
             </p>
           </div>
 
-          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-2xl bg-sky-600 text-white flex items-center justify-center">
-              <Laptop className="w-5 h-5" />
+          <div className="p-7 rounded-3xl bg-white border border-slate-200/90 stat-card-3d space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-sky-600 text-white flex items-center justify-center shadow-md shadow-sky-600/30">
+              <Laptop className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-slate-900 text-base">All 3 Teaching Modes</h3>
+            <h3 className="font-bold text-slate-900 text-lg">All 3 Teaching Modes</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
               Teach online via live video, travel locally to student homes, or run batches at your own study centre. Pick any combination.
             </p>
           </div>
 
-          <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center">
-              <Award className="w-5 h-5" />
+          <div className="p-7 rounded-3xl bg-white border border-slate-200/90 stat-card-3d space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
+              <Award className="w-6 h-6" />
             </div>
-            <h3 className="font-bold text-slate-900 text-base">Verified Badges & Trust</h3>
+            <h3 className="font-bold text-slate-900 text-lg">Verified Badges & Trust</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
               Get your degrees officially verified with the "Degree Verified" badge to stand out and attract serious parents.
             </p>
@@ -65,19 +90,19 @@ export const BecomeTutor = () => {
         </div>
 
         {/* Call to action card */}
-        <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-r from-slate-900 via-sky-950 to-teal-950 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-r from-slate-900 via-sky-950 to-teal-950 text-white shadow-xl card-3d flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2">
-            <h2 className="text-2xl font-black">Ready to create your tutor profile?</h2>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Ready to create your tutor profile?</h2>
             <p className="text-xs text-slate-300 max-w-md">
               Registration takes only 2 minutes. Start receiving tuition requests from parents in your neighbourhood immediately.
             </p>
           </div>
-          <Link
-            to="/register?role=tutor"
-            className="px-8 py-3.5 rounded-2xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm shadow-md transition-all shrink-0 flex items-center gap-2"
+          <button
+            onClick={handleStartRegistration}
+            className="px-8 py-3.5 rounded-2xl btn-3d-primary text-xs uppercase tracking-wider font-bold shrink-0 flex items-center gap-2 cursor-pointer"
           >
-            Register as a Tutor Now <ArrowRight className="w-4 h-4" />
-          </Link>
+            <span>Register as a Tutor Now</span> <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>

@@ -209,10 +209,10 @@ export const FindTutors = () => {
           <div className="flex items-center gap-3 w-full md:w-auto justify-between">
             <button
               onClick={() => setMobileFilterOpen(true)}
-              className="lg:hidden flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-sm"
+              className="lg:hidden flex items-center gap-2 px-4 py-2.5 rounded-xl btn-3d-secondary text-xs font-bold"
             >
               <SlidersHorizontal className="w-4 h-4 text-teal-600" />
-              Filters
+              <span>Filters</span>
             </button>
 
             <div className="flex items-center gap-2">
@@ -225,7 +225,7 @@ export const FindTutors = () => {
                   setSortBy(e.target.value);
                   setPage(1);
                 }}
-                className="px-3 py-2 bg-white rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-teal-500"
+                className="px-3.5 py-2.5 rounded-xl input-3d text-xs font-semibold text-slate-800 focus:ring-teal-500"
               >
                 <option value="best_match">Best Match</option>
                 <option value="lowest_fee">Lowest Hourly Fee</option>
@@ -239,7 +239,7 @@ export const FindTutors = () => {
         {/* Content Layout: Filter Sidebar + Tutor Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
           {/* DESKTOP FILTER SIDEBAR */}
-          <aside className="hidden lg:block bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-6 sticky top-24">
+          <aside className="hidden lg:block bg-white p-6 rounded-3xl border border-slate-200/90 shadow-md card-3d space-y-6 sticky top-24">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
                 <SlidersHorizontal className="w-4 h-4 text-teal-600" />
@@ -247,7 +247,7 @@ export const FindTutors = () => {
               </div>
               <button
                 onClick={handleResetFilters}
-                className="text-xs text-slate-400 hover:text-slate-600 font-medium flex items-center gap-1"
+                className="text-xs text-slate-400 hover:text-teal-600 font-medium flex items-center gap-1 transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Reset
@@ -266,7 +266,7 @@ export const FindTutors = () => {
                   { id: 'student_home', label: "Student's Home" },
                   { id: 'tutor_centre', label: "Tutor's Centre" }
                 ].map((mode) => (
-                  <label key={mode.id} className="flex items-center gap-2 cursor-pointer">
+                  <label key={mode.id} className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-50 transition-colors">
                     <input
                       type="radio"
                       name="teachingMode"
@@ -276,7 +276,7 @@ export const FindTutors = () => {
                         setTeachingMode(e.target.value);
                         setPage(1);
                       }}
-                      className="text-teal-600 focus:ring-teal-500"
+                      className="text-teal-600 focus:ring-teal-500 w-4 h-4"
                     />
                     <span>{mode.label}</span>
                   </label>
@@ -295,7 +295,7 @@ export const FindTutors = () => {
                   setClassGrade(e.target.value);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-800"
+                className="w-full px-3 py-2 rounded-xl input-3d text-xs font-medium text-slate-800"
               >
                 <option value="">All Classes</option>
                 {config.classes.map((c) => (
@@ -315,7 +315,7 @@ export const FindTutors = () => {
                   setSubject(e.target.value);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-800"
+                className="w-full px-3 py-2 rounded-xl input-3d text-xs font-medium text-slate-800"
               >
                 <option value="">All Subjects</option>
                 {config.subjects.map((s) => (
@@ -335,7 +335,7 @@ export const FindTutors = () => {
                   setLocality(e.target.value);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium text-slate-800"
+                className="w-full px-3 py-2 rounded-xl input-3d text-xs font-medium text-slate-800"
               >
                 <option value="">Any Locality</option>
                 {config.localities.map((loc) => (
@@ -355,7 +355,7 @@ export const FindTutors = () => {
                   placeholder="Min ₹"
                   value={minFee}
                   onChange={(e) => setMinFee(e.target.value)}
-                  className="w-1/2 px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs"
+                  className="w-1/2 px-2.5 py-1.5 rounded-lg input-3d text-xs"
                 />
                 <span className="text-slate-400">-</span>
                 <input
@@ -363,14 +363,14 @@ export const FindTutors = () => {
                   placeholder="Max ₹"
                   value={maxFee}
                   onChange={(e) => setMaxFee(e.target.value)}
-                  className="w-1/2 px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs"
+                  className="w-1/2 px-2.5 py-1.5 rounded-lg input-3d text-xs"
                 />
               </div>
             </div>
 
             {/* 6. Checkboxes: Verified Credentials & Free Demo */}
             <div className="space-y-2 pt-2 border-t border-slate-100">
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer p-1 rounded-lg hover:bg-slate-50 transition-colors">
                 <input
                   type="checkbox"
                   checked={verifiedOnly}
@@ -383,7 +383,7 @@ export const FindTutors = () => {
                 <span>Verified Qualifications Only</span>
               </label>
 
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer p-1 rounded-lg hover:bg-slate-50 transition-colors">
                 <input
                   type="checkbox"
                   checked={demoAvailable}
@@ -417,7 +417,7 @@ export const FindTutors = () => {
                 </p>
                 <button
                   onClick={handleResetFilters}
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs"
+                  className="px-6 py-3 rounded-2xl btn-3d-navy text-xs uppercase tracking-wider"
                 >
                   Clear Filters
                 </button>
@@ -440,21 +440,21 @@ export const FindTutors = () => {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-6">
+              <div className="flex items-center justify-center gap-3 pt-6">
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="px-4 py-2 rounded-xl btn-3d-secondary text-xs disabled:opacity-40"
                 >
                   Previous
                 </button>
-                <span className="text-xs font-semibold text-slate-600 px-3">
+                <span className="text-xs font-bold text-slate-700 px-3 py-1.5 rounded-lg bg-white border border-slate-200 shadow-2xs">
                   Page {page} of {totalPages}
                 </span>
                 <button
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 disabled:opacity-40"
+                  className="px-4 py-2 rounded-xl btn-3d-secondary text-xs disabled:opacity-40"
                 >
                   Next
                 </button>
@@ -464,31 +464,191 @@ export const FindTutors = () => {
         </div>
       </div>
 
+      {/* MOBILE FILTER MODAL DRAWER */}
+      {mobileFilterOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col animate-in slide-in-from-bottom-5 duration-200">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2 font-bold text-slate-900 text-sm">
+                <SlidersHorizontal className="w-4 h-4 text-teal-600" />
+                <span>Filters</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleResetFilters}
+                  className="text-xs text-slate-400 hover:text-teal-600 font-medium px-2 py-1"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => setMobileFilterOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-5 text-sm">
+              {/* Teaching Mode */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Teaching Mode
+                </label>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {[
+                    { id: '', label: 'All Modes' },
+                    { id: 'online', label: 'Online' },
+                    { id: 'student_home', label: "Student's Home" },
+                    { id: 'tutor_centre', label: "Tutor's Centre" }
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => {
+                        setTeachingMode(mode.id);
+                        setPage(1);
+                      }}
+                      className={`py-2 px-3 rounded-xl border text-center font-semibold transition-all ${
+                        teachingMode === mode.id
+                          ? 'bg-teal-50 border-teal-500 text-teal-800'
+                          : 'border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Class */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Class / Level
+                </label>
+                <select
+                  value={classGrade}
+                  onChange={(e) => {
+                    setClassGrade(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl input-3d text-xs font-medium"
+                >
+                  <option value="">All Classes</option>
+                  {config.classes.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subject */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Subject
+                </label>
+                <select
+                  value={subject}
+                  onChange={(e) => {
+                    setSubject(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl input-3d text-xs font-medium"
+                >
+                  <option value="">All Subjects</option>
+                  {config.subjects.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Locality */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Locality
+                </label>
+                <select
+                  value={locality}
+                  onChange={(e) => {
+                    setLocality(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl input-3d text-xs font-medium"
+                >
+                  <option value="">Any Locality</option>
+                  {config.localities.map((loc) => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Checkboxes */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={verifiedOnly}
+                    onChange={(e) => {
+                      setVerifiedOnly(e.target.checked);
+                      setPage(1);
+                    }}
+                    className="w-4 h-4 text-teal-600 rounded"
+                  />
+                  <span>Verified Qualifications Only</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={demoAvailable}
+                    onChange={(e) => {
+                      setDemoAvailable(e.target.checked);
+                      setPage(1);
+                    }}
+                    className="w-4 h-4 text-teal-600 rounded"
+                  />
+                  <span>Free Trial / Demo Available</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex gap-3">
+              <button
+                onClick={() => setMobileFilterOpen(false)}
+                className="w-full py-2.5 rounded-xl btn-3d-primary text-xs uppercase tracking-wider"
+              >
+                Apply Filters ({totalTutors} Results)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* FLOATING COMPARISON BAR (IF 1+ TUTORS SELECTED) */}
       {comparingTutors.length > 0 && (
-        <div className="fixed bottom-6 inset-x-4 max-w-3xl mx-auto z-40 bg-slate-900 text-white rounded-2xl shadow-2xl p-4 flex items-center justify-between gap-4 border border-slate-800 animate-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-6 inset-x-4 max-w-3xl mx-auto z-40 bg-slate-900/95 backdrop-blur-md text-white rounded-3xl p-4 sm:p-5 flex items-center justify-between gap-4 border border-teal-500/30 shadow-[0_16px_36px_rgba(0,0,0,0.4)] animate-in slide-in-from-bottom-3 duration-200">
           <div className="flex items-center gap-3">
-            <Layers className="w-5 h-5 text-teal-400 shrink-0" />
+            <div className="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/30">
+              <Layers className="w-5 h-5 text-teal-400" />
+            </div>
             <div>
-              <div className="font-bold text-sm">
+              <div className="font-extrabold text-sm text-white">
                 Comparing {comparingTutors.length} of 3 tutors
               </div>
-              <div className="text-[11px] text-slate-400 truncate max-w-sm">
+              <div className="text-[11px] text-slate-400 truncate max-w-xs sm:max-w-md">
                 {comparingTutors.map((t) => t.user?.name).join(', ')}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5 shrink-0">
             <button
               onClick={() => setComparingTutors([])}
-              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition-colors"
             >
               Clear
             </button>
             <button
               onClick={() => setComparisonModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold text-xs transition-colors"
+              className="px-4 py-2 rounded-xl btn-3d-primary text-xs uppercase tracking-wider font-bold"
             >
               Compare Side-by-Side
             </button>

@@ -68,7 +68,7 @@ export const createBooking = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Tutor not found.' });
     }
 
-    if (!tutor.isAcceptingStudents || !tutor.isPublished) {
+    if (!tutor.isAcceptingStudents || !tutor.isPublished || ['withdrawn', 'inactive', 'rejected'].includes(tutor.applicationStatus)) {
       return res.status(400).json({
         success: false,
         message: 'This tutor is not currently accepting new tuition requests.'

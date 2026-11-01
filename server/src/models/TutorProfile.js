@@ -45,11 +45,278 @@ const tutorProfileSchema = new Schema(
       default: '',
       trim: true
     },
+    applicationId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true
+    },
+    applicationStatus: {
+      type: String,
+      enum: ['draft', 'applied', 'pending_review', 'approved', 'withdrawn', 'inactive', 'rejected'],
+      default: 'draft'
+    },
+    isInCart: {
+      type: Boolean,
+      default: true
+    },
+    withdrawnAt: {
+      type: Date
+    },
+    withdrawnReason: {
+      type: String,
+      default: ''
+    },
+    reviewedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    reviewedAt: {
+      type: Date
+    },
+    adminNotes: {
+      type: String,
+      default: ''
+    },
+    statusHistory: [
+      {
+        status: { type: String, required: true },
+        changedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        changedAt: { type: Date, default: Date.now },
+        reason: { type: String, default: '' }
+      }
+    ],
+    profileStatus: {
+      type: String,
+      enum: ['draft', 'pending_review', 'published', 'rejected'],
+      default: 'draft'
+    },
+    registrationStep: {
+      type: Number,
+      default: 1,
+      min: 1,
+      max: 9
+    },
+    termsAccepted: {
+      type: Boolean,
+      default: false
+    },
+    submittedAt: {
+      type: Date
+    },
+    // Step 1: Personal Details
+    fullName: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    dateOfBirth: {
+      type: String,
+      default: ''
+    },
+    gender: {
+      type: String,
+      enum: ['', 'Male', 'Female', 'Other', 'Prefer not to say'],
+      default: ''
+    },
+    whatsappNumber: {
+      type: String,
+      default: ''
+    },
+    pincode: {
+      type: String,
+      default: ''
+    },
+    area: {
+      type: String,
+      default: ''
+    },
+    fullAddressPrivate: {
+      type: String,
+      default: '' // Strictly private; never exposed publicly
+    },
+    // Step 2: Education & Qualifications
+    highestQualification: {
+      type: String,
+      default: ''
+    },
+    degreeCourseName: {
+      type: String,
+      default: ''
+    },
+    collegeUniversity: {
+      type: String,
+      default: ''
+    },
+    passingYear: {
+      type: Number
+    },
+    expectedGraduationYear: {
+      type: Number
+    },
+    additionalCertifications: {
+      type: String,
+      default: ''
+    },
+    qualificationsList: [
+      {
+        degree: { type: String, required: true },
+        institution: { type: String, required: true },
+        fieldOfStudy: { type: String, default: '' },
+        passingYear: { type: Number },
+        gradeOrPercentage: { type: String, default: '' },
+        documentPath: { type: String, default: '' },
+        documentOriginalName: { type: String, default: '' },
+        documentMimeType: { type: String, default: '' },
+        verificationStatus: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        adminNotes: { type: String, default: '' }
+      }
+    ],
+    // Step 3: Teaching Experience
+    experienceYears: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    experienceMonths: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 11
+    },
+    teachingInstitutions: {
+      type: String,
+      default: ''
+    },
+    classesPreviouslyTaught: {
+      type: [String],
+      default: []
+    },
+    subjectsPreviouslyTaught: {
+      type: [String],
+      default: []
+    },
+    experienceDescription: {
+      type: String,
+      default: ''
+    },
+    resumeDocument: {
+      path: { type: String, default: '' },
+      originalName: { type: String, default: '' },
+      mimeType: { type: String, default: '' },
+      uploadedAt: { type: Date }
+    },
+    // Step 4: Classes & Subjects
+    schoolClassGroups: {
+      type: [String],
+      default: []
+    },
+    customSubjects: {
+      type: [String],
+      default: []
+    },
+    additionalTeachingCategories: {
+      type: [String],
+      default: []
+    },
+    // Step 5: Teaching Preferences
+    teachingModePreferences: {
+      type: [String],
+      default: []
+    },
+    preferredStudentLevels: {
+      type: [String],
+      default: []
+    },
+    preferredTeachingAreas: {
+      type: [String],
+      default: []
+    },
+    preferredBatchSize: {
+      type: String,
+      default: 'One-to-One Tuition'
+    },
+    onlineOfflinePreference: {
+      type: String,
+      default: 'Both Online and Offline'
+    },
+    availableDays: {
+      type: [String],
+      default: []
+    },
+    availableTimeSlots: {
+      type: [String],
+      default: []
+    },
+    // Step 6: Fees & Availability
+    hourlyFee: {
+      type: Number,
+      default: 500,
+      min: 0
+    },
+    monthlyFee: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    trialClassAvailable: {
+      type: Boolean,
+      default: true
+    },
+    trialClassFee: {
+      type: Number,
+      default: 0
+    },
+    weeklyAvailability: {
+      type: String,
+      default: ''
+    },
+    preferredPaymentMethods: {
+      type: [String],
+      default: ['UPI', 'Bank Transfer', 'Cash']
+    },
+    // Step 7: About the Tutor
+    strengthsAndSpecializations: {
+      type: String,
+      default: ''
+    },
+    achievements: {
+      type: String,
+      default: ''
+    },
+    awardsCertifications: {
+      type: String,
+      default: ''
+    },
+    // Step 8: Documents and Verification
+    verificationDocuments: [
+      {
+        docType: {
+          type: String,
+          enum: ['identity', 'qualification', 'resume', 'other'],
+          required: true
+        },
+        title: { type: String, default: '' },
+        path: { type: String, required: true },
+        originalName: { type: String, default: '' },
+        mimeType: { type: String, default: '' },
+        status: {
+          type: String,
+          enum: ['pending', 'verified', 'rejected'],
+          default: 'pending'
+        },
+        adminNotes: { type: String, default: '' },
+        uploadedAt: { type: Date, default: Date.now }
+      }
+    ],
     teachingModes: {
       type: [String],
       enum: Object.values(TEACHING_MODES),
-      default: [TEACHING_MODES.ONLINE],
-      validate: [v => v.length > 0, 'At least one teaching mode must be selected']
+      default: [TEACHING_MODES.ONLINE]
     },
     subjects: {
       type: [String],
@@ -163,6 +430,63 @@ const tutorProfileSchema = new Schema(
       min: 0,
       max: 5
     },
+    isPinned: {
+      type: Boolean,
+      default: false
+    },
+    professionalTitle: {
+      type: String,
+      default: '',
+      trim: true
+    },
+    shortIntro: {
+      type: String,
+      default: '',
+      trim: true
+    },
+    qualificationDisplay: {
+      type: String,
+      default: '',
+      trim: true
+    },
+    organisation: {
+      name: { type: String, default: '' },
+      role: { type: String, default: '' },
+      foundedYear: { type: Number },
+      description: { type: String, default: '' }
+    },
+    educationDetails: {
+      degree: { type: String, default: '' },
+      institution: { type: String, default: '' },
+      campus: { type: String, default: '' },
+      status: { type: String, default: '' },
+      expectedGraduationYear: { type: Number }
+    },
+    programmingSkills: {
+      type: [String],
+      default: []
+    },
+    teachingMethodologyList: {
+      type: [String],
+      default: []
+    },
+    classSubjectMapping: [
+      {
+        classGroup: { type: String, required: true },
+        subjects: [{ type: String }]
+      }
+    ],
+    serviceArea: {
+      locality: { type: String, default: '' },
+      city: { type: String, default: '' },
+      isConfirmed: { type: Boolean, default: false }
+    },
+    experienceDetails: {
+      personalTeachingStartDate: { type: Date },
+      personalTeachingYears: { type: Number },
+      subjectsTaught: { type: [String], default: [] },
+      responsibilities: { type: String, default: '' }
+    },
     city: {
       type: String,
       default: 'Delhi'
@@ -177,7 +501,24 @@ const tutorProfileSchema = new Schema(
   }
 );
 
+tutorProfileSchema.pre('save', function (next) {
+  if (!this.applicationId) {
+    const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+    this.applicationId = `SL-TUT-${randomSuffix}`;
+  }
+  if (this.applicationStatus === 'withdrawn' || this.applicationStatus === 'inactive') {
+    this.isPublished = false;
+    this.isAcceptingStudents = false;
+    this.isInCart = false;
+  }
+  next();
+});
+
 // Indexes for high performance search & discovery
+tutorProfileSchema.index({ isPinned: -1 });
+tutorProfileSchema.index({ applicationStatus: 1 });
+tutorProfileSchema.index({ isInCart: 1 });
+tutorProfileSchema.index({ profileStatus: 1 });
 tutorProfileSchema.index({ subjects: 1 });
 tutorProfileSchema.index({ classes: 1 });
 tutorProfileSchema.index({ teachingModes: 1 });

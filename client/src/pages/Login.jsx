@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { GraduationCap, Lock, Mail, ArrowRight, ShieldCheck, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 export const Login = () => {
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -25,9 +26,20 @@ export const Login = () => {
       const data = await login(email, password);
       showToast(`Welcome back, ${data.user.name}!`, 'success');
 
-      if (data.user.role === 'admin') navigate('/admin');
-      else if (data.user.role === 'tutor') navigate('/tutor');
-      else navigate('/parent');
+      const redirect = searchParams.get('redirect');
+      if (redirect) {
+        navigate(redirect);
+      } else if (data.user.role === 'admin') {
+        navigate('/admin');
+      } else if (data.user.role === 'tutor') {
+        if (data.profile?.profileStatus === 'draft') {
+          navigate('/tutor/register');
+        } else {
+          navigate('/tutor');
+        }
+      } else {
+        navigate('/parent');
+      }
     } catch (err) {
       showToast(err.message || 'Login failed. Please check your credentials.', 'error');
     } finally {
@@ -42,7 +54,7 @@ export const Login = () => {
 
   return (
     <div className="min-h-[85vh] bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl max-w-md w-full p-8 space-y-6">
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl card-3d max-w-md w-full p-8 space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex items-center gap-2">
@@ -51,12 +63,12 @@ export const Login = () => {
             </div>
             <span className="text-xl font-bold text-slate-900 tracking-tight">ShikshaLink</span>
           </Link>
-          <h2 className="text-2xl font-extrabold text-slate-900 pt-2">Sign in to your account</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900 pt-2 tracking-tight">Sign in to your account</h2>
           <p className="text-xs text-slate-500">Access your tuition requirements, bookings, or teacher profile</p>
         </div>
 
         {/* Demo Login Fast-Pills */}
-        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+        <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2 shadow-2xs">
           <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">
             Quick Demo Logins (Click to autofill)
           </div>
@@ -64,21 +76,21 @@ export const Login = () => {
             <button
               type="button"
               onClick={() => handleQuickDemo('rajesh.parent@example.com', 'Parent@123')}
-              className="py-1 px-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-teal-500 hover:text-teal-700 transition-colors shadow-2xs"
+              className="py-1.5 px-2 rounded-xl btn-3d-secondary text-[11px]"
             >
               Parent Demo
             </button>
             <button
               type="button"
               onClick={() => handleQuickDemo('vikram.tutor@example.com', 'Tutor@123')}
-              className="py-1 px-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-teal-500 hover:text-teal-700 transition-colors shadow-2xs"
+              className="py-1.5 px-2 rounded-xl btn-3d-secondary text-[11px]"
             >
               Tutor Demo
             </button>
             <button
               type="button"
               onClick={() => handleQuickDemo('admin@shikshalink.in', 'Admin@12345')}
-              className="py-1 px-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-teal-500 hover:text-teal-700 transition-colors shadow-2xs"
+              className="py-1.5 px-2 rounded-xl btn-3d-secondary text-[11px]"
             >
               Admin Demo
             </button>
@@ -92,14 +104,14 @@ export const Login = () => {
               Email Address
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <Mail className="w-4 h-4 text-teal-600 absolute left-3.5 top-3" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-teal-500"
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl input-3d text-xs font-medium"
               />
             </div>
           </div>
@@ -111,14 +123,14 @@ export const Login = () => {
               </label>
             </div>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <Lock className="w-4 h-4 text-teal-600 absolute left-3.5 top-3" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-teal-500"
+                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl input-3d text-xs font-medium"
               />
             </div>
           </div>
@@ -126,7 +138,7 @@ export const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3.5 rounded-xl btn-3d-navy text-xs uppercase tracking-wider font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? 'Authenticating...' : 'Sign In'}
             <ArrowRight className="w-4 h-4" />

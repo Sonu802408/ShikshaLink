@@ -6,19 +6,19 @@ export const TutorComparisonModal = ({ tutors = [], onClose, onBookTutor }) => {
   if (!tutors || tutors.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] border border-slate-200/90 max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
           <div>
-            <h3 className="text-xl font-bold text-slate-900">Side-by-Side Tutor Comparison</h3>
+            <h3 className="text-xl font-bold text-slate-900 tracking-tight">Side-by-Side Tutor Comparison</h3>
             <p className="text-xs text-slate-500 mt-0.5">
               Compare qualifications, rates, and teaching modes of up to 3 tutors
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100"
+            className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -29,13 +29,13 @@ export const TutorComparisonModal = ({ tutors = [], onClose, onBookTutor }) => {
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b border-slate-200">
-                <th className="py-4 px-4 w-44 font-semibold text-slate-500 text-xs uppercase tracking-wider">
+                <th className="py-4 px-4 w-44 font-bold text-slate-500 text-xs uppercase tracking-wider">
                   Criteria
                 </th>
                 {tutors.map((t) => (
                   <th key={t._id} className="py-4 px-4 min-w-[240px] align-top">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center uppercase shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-extrabold flex items-center justify-center uppercase shrink-0 shadow-md ring-2 ring-teal-500/20">
                         {t.user?.name?.[0] || 'T'}
                       </div>
                       <div>
@@ -50,20 +50,20 @@ export const TutorComparisonModal = ({ tutors = [], onClose, onBookTutor }) => {
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {/* Fee Rate */}
               <tr>
-                <td className="py-3.5 px-4 font-semibold text-slate-600 bg-slate-50/60 text-xs">
+                <td className="py-3.5 px-4 font-bold text-slate-600 bg-slate-50/60 text-xs">
                   Hourly Fee
                 </td>
                 {tutors.map((t) => (
-                  <td key={t._id} className="py-3.5 px-4 font-bold text-slate-900 text-base">
+                  <td key={t._id} className="py-3.5 px-4 font-black text-slate-900 text-base">
                     ₹{t.feeStructure?.hourlyRate || 500}
-                    <span className="text-xs font-normal text-slate-500">/hr</span>
+                    <span className="text-xs font-semibold text-slate-500">/hr</span>
                   </td>
                 ))}
               </tr>
 
               {/* Rating & Reviews */}
               <tr>
-                <td className="py-3.5 px-4 font-semibold text-slate-600 bg-slate-50/60 text-xs">
+                <td className="py-3.5 px-4 font-bold text-slate-600 bg-slate-50/60 text-xs">
                   Reviews & Rating
                 </td>
                 {tutors.map((t) => (
@@ -83,7 +83,7 @@ export const TutorComparisonModal = ({ tutors = [], onClose, onBookTutor }) => {
 
               {/* Teaching Modes */}
               <tr>
-                <td className="py-3.5 px-4 font-semibold text-slate-600 bg-slate-50/60 text-xs">
+                <td className="py-3.5 px-4 font-bold text-slate-600 bg-slate-50/60 text-xs">
                   Teaching Modes
                 </td>
                 {tutors.map((t) => (
@@ -99,11 +99,11 @@ export const TutorComparisonModal = ({ tutors = [], onClose, onBookTutor }) => {
 
               {/* Experience */}
               <tr>
-                <td className="py-3.5 px-4 font-semibold text-slate-600 bg-slate-50/60 text-xs">
+                <td className="py-3.5 px-4 font-bold text-slate-600 bg-slate-50/60 text-xs">
                   Teaching Experience
                 </td>
                 {tutors.map((t) => (
-                  <td key={t._id} className="py-3.5 px-4 font-medium">
+                  <td key={t._id} className="py-3.5 px-4 font-semibold text-slate-800">
                     {t.yearsOfExperience || 1}+ Years
                   </td>
                 ))}
@@ -111,13 +111,13 @@ export const TutorComparisonModal = ({ tutors = [], onClose, onBookTutor }) => {
 
               {/* Locality */}
               <tr>
-                <td className="py-3.5 px-4 font-semibold text-slate-600 bg-slate-50/60 text-xs">
+                <td className="py-3.5 px-4 font-bold text-slate-600 bg-slate-50/60 text-xs">
                   Locality / Base
                 </td>
                 {tutors.map((t) => (
                   <td key={t._id} className="py-3.5 px-4 font-medium text-slate-800">
                     <div className="flex items-center gap-1 text-xs">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      <MapPin className="w-3.5 h-3.5 text-teal-600" />
                       {t.primaryLocality || 'Delhi'}
                     </div>
                   </td>
@@ -126,7 +126,7 @@ export const TutorComparisonModal = ({ tutors = [], onClose, onBookTutor }) => {
 
               {/* Verification Badges */}
               <tr>
-                <td className="py-3.5 px-4 font-semibold text-slate-600 bg-slate-50/60 text-xs">
+                <td className="py-3.5 px-4 font-bold text-slate-600 bg-slate-50/60 text-xs">
                   Verifications
                 </td>
                 {tutors.map((t) => (
@@ -148,13 +148,13 @@ export const TutorComparisonModal = ({ tutors = [], onClose, onBookTutor }) => {
 
               {/* Demo Availability */}
               <tr>
-                <td className="py-3.5 px-4 font-semibold text-slate-600 bg-slate-50/60 text-xs">
+                <td className="py-3.5 px-4 font-bold text-slate-600 bg-slate-50/60 text-xs">
                   Demo Class
                 </td>
                 {tutors.map((t) => (
                   <td key={t._id} className="py-3.5 px-4">
                     {t.demoClassAvailable ? (
-                      <span className="text-emerald-700 font-semibold text-xs flex items-center gap-1">
+                      <span className="text-emerald-700 font-bold text-xs flex items-center gap-1">
                         <Check className="w-4 h-4 text-emerald-600" />
                         {t.demoClassFee === 0 ? 'Free Demo Class' : `Paid Demo (₹${t.demoClassFee})`}
                       </span>
@@ -175,7 +175,7 @@ export const TutorComparisonModal = ({ tutors = [], onClose, onBookTutor }) => {
                         onClose();
                         onBookTutor(t);
                       }}
-                      className="w-full py-2 px-4 rounded-xl text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors shadow-sm"
+                      className="w-full py-2.5 px-4 rounded-xl text-xs font-bold btn-3d-primary uppercase tracking-wider"
                     >
                       Book with {t.user?.name?.split(' ')[0]}
                     </button>

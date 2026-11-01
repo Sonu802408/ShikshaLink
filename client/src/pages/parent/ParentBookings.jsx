@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   CalendarCheck,
   Clock,
@@ -11,11 +12,15 @@ import {
   Star,
   ExternalLink,
   ShieldCheck,
-  MessageSquare
+  MessageSquare,
+  QrCode,
+  Receipt,
+  RotateCcw
 } from 'lucide-react';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { ReviewFormModal } from '../../components/reviews/ReviewFormModal';
+import { PaymentModal } from '../../components/common/PaymentModal';
 
 export const ParentBookings = () => {
   const { showToast } = useToast();
@@ -23,8 +28,10 @@ export const ParentBookings = () => {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
 
-  // Review Modal State
+  // Review & Payment Modal States
   const [reviewBooking, setReviewBooking] = useState(null);
+  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState(null);
+  const [activeReceipt, setActiveReceipt] = useState(null);
 
   const fetchBookings = async () => {
     setLoading(true);
@@ -43,6 +50,17 @@ export const ParentBookings = () => {
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  const handleViewReceipt = async (bookingId) => {
+    try {
+      const res = await apiRequest(`/payments/receipt/${bookingId}`);
+      if (res.success && res.receipt) {
+        setActiveReceipt(res.receipt);
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to load receipt', 'error');
+    }
+  };
 
   const handleRespondAlternative = async (bookingId, accept) => {
     let reason = '';
@@ -66,20 +84,34 @@ export const ParentBookings = () => {
     }
   };
 
-  const handleCancelBooking = async (bookingId) => {
-    const reason = prompt('Please enter a cancellation reason:');
+  const handleCancelBooking = async (b) => {
+    const isPaid = b.fee?.paymentStatus === 'paid';
+    const confirmMsg = isPaid
+      ? 'This session is paid. Cancelling will initiate a refund as per policy. Enter reason:'
+      : 'Please enter a cancellation reason:';
+    
+    const reason = prompt(confirmMsg);
     if (!reason) return;
 
     try {
-      const res = await apiRequest(`/bookings/${bookingId}/cancel`, {
-        method: 'PATCH',
-        body: JSON.stringify({ reason })
-      });
-      if (res.success) {
-        showToast('Booking cancelled', 'info');
-        setBookings((prev) =>
-          prev.map((b) => (b._id === bookingId ? res.booking : b))
-        );
+      if (isPaid) {
+        const res = await apiRequest('/payments/refund', {
+          method: 'POST',
+          body: JSON.stringify({ bookingId: b._id, reason })
+        });
+        if (res.success) {
+          showToast('Booking cancelled & refund processed!', 'success');
+          fetchBookings();
+        }
+      } else {
+        const res = await apiRequest(`/bookings/${b._id}/cancel`, {
+          method: 'PATCH',
+          body: JSON.stringify({ reason })
+        });
+        if (res.success) {
+          showToast('Booking cancelled', 'info');
+          fetchBookings();
+        }
       }
     } catch (err) {
       showToast(err.message || 'Failed to cancel booking', 'error');
@@ -263,6 +295,36 @@ export const ParentBookings = () => {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {/* Payment Verification Pending Badge */}
+                    {b.fee?.paymentStatus === 'pending_verification' && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-300 font-bold text-xs">
+                        <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                        <span>Payment Verification Pending</span>
+                      </span>
+                    )}
+
+                    {/* Pay via UPI / QR button if awaiting payment or unpaid */}
+                    {b.fee?.paymentStatus !== 'paid' && b.fee?.paymentStatus !== 'pending_verification' && !b.fee?.isDemoFree && b.status !== 'cancelled' && (
+                      <Link
+                        to={`/checkout/${b._id}`}
+                        className="px-3.5 py-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold rounded-xl shadow-sm flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all"
+                      >
+                        <QrCode className="w-3.5 h-3.5" />
+                        <span>Checkout & Pay UPI</span>
+                      </Link>
+                    )}
+
+                    {/* View Receipt button if paid */}
+                    {b.fee?.paymentStatus === 'paid' && (
+                      <button
+                        onClick={() => handleViewReceipt(b._id)}
+                        className="px-3 py-1.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl flex items-center gap-1 shadow-2xs"
+                      >
+                        <Receipt className="w-3.5 h-3.5 text-teal-600" />
+                        <span>Receipt</span>
+                      </button>
+                    )}
+
                     {/* Review Button for completed sessions */}
                     {isCompleted && !b.hasReview && (
                       <button
@@ -275,12 +337,12 @@ export const ParentBookings = () => {
                     )}
 
                     {/* Cancellation Button for active/pending */}
-                    {!isCompleted && b.status !== 'cancelled' && (
+                    {!isCompleted && b.status !== 'cancelled' && b.status !== 'refunded' && (
                       <button
-                        onClick={() => handleCancelBooking(b._id)}
+                        onClick={() => handleCancelBooking(b)}
                         className="px-3 py-1.5 border border-slate-200 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl font-medium"
                       >
-                        Cancel Session
+                        {b.fee?.paymentStatus === 'paid' ? 'Cancel & Refund' : 'Cancel Session'}
                       </button>
                     )}
                   </div>
@@ -301,6 +363,84 @@ export const ParentBookings = () => {
             fetchBookings();
           }}
         />
+      )}
+
+      {/* Payment Modal */}
+      {selectedBookingForPayment && (
+        <PaymentModal
+          booking={selectedBookingForPayment}
+          onClose={() => setSelectedBookingForPayment(null)}
+          onPaymentSuccess={() => {
+            setSelectedBookingForPayment(null);
+            fetchBookings();
+          }}
+        />
+      )}
+
+      {/* Itemized Receipt Modal */}
+      {activeReceipt && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 text-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-teal-600">Official Payment Receipt</span>
+                <h3 className="text-base font-bold text-slate-900">{activeReceipt.receiptNumber}</h3>
+              </div>
+              <button onClick={() => setActiveReceipt(null)} className="p-1.5 text-slate-400 hover:text-slate-700">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-slate-600">
+              <div className="flex justify-between">
+                <span>Issued To:</span>
+                <strong className="text-slate-900">{activeReceipt.parent?.name}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span>Assigned Educator:</span>
+                <strong className="text-slate-900">{activeReceipt.tutor?.name}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span>Tuition Subject:</span>
+                <span>{activeReceipt.student?.subject} ({activeReceipt.student?.classGrade})</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Mode & Duration:</span>
+                <span className="capitalize">{activeReceipt.session?.teachingMode?.replace('_', ' ')} • {activeReceipt.session?.durationHours} hr</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+              <div className="flex justify-between">
+                <span>Base Tuition Fee:</span>
+                <span>₹{activeReceipt.financials?.baseTutorFee}</span>
+              </div>
+              <div className="flex justify-between text-slate-500">
+                <span>Matchmaking / Platform Fee:</span>
+                <span>₹{activeReceipt.financials?.platformFee}</span>
+              </div>
+              <div className="flex justify-between text-slate-500">
+                <span>GST (18%):</span>
+                <span>₹{activeReceipt.financials?.taxes}</span>
+              </div>
+              <div className="pt-2 border-t border-slate-200 flex justify-between font-black text-sm text-slate-900">
+                <span>Total Settled:</span>
+                <span className="text-teal-700">₹{activeReceipt.financials?.finalAmount}</span>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-400 text-center">
+              Payment Gateway Ref: {activeReceipt.paymentDetails?.paymentId} • Status: Confirmed
+            </div>
+
+            <button
+              onClick={() => window.print()}
+              className="w-full py-2.5 rounded-xl btn-3d-secondary font-bold"
+            >
+              Print / Save PDF Receipt
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
