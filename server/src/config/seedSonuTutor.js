@@ -197,6 +197,8 @@ export const seedSonuTutor = async () => {
       qualificationVerified: false,
       backgroundChecked: false
     },
+    profileStatus: 'published',
+    applicationStatus: 'approved',
     isPublished: true,
     isAcceptingStudents: true,
     averageRating: 0,

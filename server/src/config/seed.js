@@ -233,6 +233,8 @@ const seedDatabase = async () => {
         qualificationVerified: true,
         backgroundChecked: true
       },
+      profileStatus: 'published',
+      applicationStatus: 'approved',
       isPublished: true,
       isAcceptingStudents: true,
       averageRating: 4.9,
@@ -345,6 +347,8 @@ const seedDatabase = async () => {
         qualificationVerified: true,
         backgroundChecked: false // Clearly distinct per requirement
       },
+      profileStatus: 'published',
+      applicationStatus: 'approved',
       isPublished: true,
       isAcceptingStudents: true,
       averageRating: 4.8,
@@ -423,6 +427,8 @@ const seedDatabase = async () => {
         qualificationVerified: true,
         backgroundChecked: true
       },
+      profileStatus: 'published',
+      applicationStatus: 'approved',
       isPublished: true,
       isAcceptingStudents: true,
       averageRating: 5.0,
@@ -489,6 +495,8 @@ const seedDatabase = async () => {
         qualificationVerified: false, // Pending admin review
         backgroundChecked: false
       },
+      profileStatus: 'published',
+      applicationStatus: 'approved',
       isPublished: true,
       isAcceptingStudents: true,
       averageRating: 0,
