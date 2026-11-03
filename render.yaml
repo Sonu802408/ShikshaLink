@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: shikshalink-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CLIENT_URL
+        value: "*"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ADMIN_BOOTSTRAP_KEY
+        value: shikshalink_secure_admin_bootstrap_key
+      - key: MONGODB_URI
+        sync: false
