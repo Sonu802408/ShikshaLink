@@ -30,7 +30,17 @@ export const apiRequest = async (endpoint, options = {}) => {
     headers
   });
 
-  const data = await response.json().catch(() => ({ success: false, message: 'Server communication error' }));
+  let data;
+  try {
+    data = await response.json();
+  } catch (err) {
+    data = {
+      success: false,
+      message: response.status === 404
+        ? 'Backend endpoint not found (404). Backend server connect nahi hai.'
+        : `Server communication error (${response.status || 'Network Error'})`
+    };
+  }
 
   if (!response.ok) {
     throw new Error(data.message || 'An error occurred during the request');
