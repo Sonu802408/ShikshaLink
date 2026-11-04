@@ -148,6 +148,18 @@ export const Navbar = () => {
 
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
+                {/* Tutor Cart Shortcut */}
+                {role === 'tutor' && (
+                  <Link
+                    to="/tutor/cart"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-xs transition-all border border-teal-200/80 shadow-2xs"
+                    title="My Application & Cart"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-teal-600" />
+                    <span>Cart</span>
+                  </Link>
+                )}
+
                 {/* Notifications dropdown button */}
                 <div className="relative">
                   <button
