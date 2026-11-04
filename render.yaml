@@ -21,4 +21,4 @@ services:
       - key: ADMIN_BOOTSTRAP_KEY
         value: shikshalink_secure_admin_bootstrap_key
       - key: MONGODB_URI
-        sync: false
+        value: mongodb+srv://sonu:sonu%40123@cluster0.ibzynyr.mongodb.net/shikshalink?retryWrites=true&w=majority
