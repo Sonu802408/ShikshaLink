@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "ShikshaLink - Full-Stack Tutor-Parent Marketplace Website",
   "scripts": {
+    "build": "npm --prefix client run build",
     "seed": "npm --prefix server run seed",
     "test": "npm --prefix server test",
     "server": "npm --prefix server start",
