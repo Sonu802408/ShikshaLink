@@ -55,10 +55,33 @@ export const getAdminMetrics = async (req, res, next) => {
   }
 };
 
-// Verification Queue: List submitted qualifications
+// Verification Queue: List submitted qualifications & pending tutor applications
 export const getVerificationQueue = async (req, res, next) => {
   try {
     const { status = 'pending' } = req.query;
+
+    // 1. Fetch tutor applications matching the filter
+    const tutorFilter = {};
+    if (status === 'pending') {
+      tutorFilter.$or = [
+        { applicationStatus: { $in: ['applied', 'pending_review'] } },
+        { profileStatus: 'pending_review' }
+      ];
+    } else if (status === 'verified' || status === 'approved') {
+      tutorFilter.$or = [
+        { applicationStatus: 'approved' },
+        { profileStatus: 'published' }
+      ];
+    } else if (status === 'rejected') {
+      tutorFilter.applicationStatus = 'rejected';
+    }
+
+    const pendingTutors = await TutorProfile.find(tutorFilter)
+      .populate('user', 'name email phone avatar createdAt status')
+      .populate('reviewedBy', 'name email')
+      .sort({ updatedAt: -1, createdAt: -1 });
+
+    // 2. Fetch qualification document items
     const filter = status === 'all' ? {} : { verificationStatus: status };
 
     const queue = await TutorQualification.find(filter)
@@ -68,8 +91,9 @@ export const getVerificationQueue = async (req, res, next) => {
 
     res.json({
       success: true,
-      count: queue.length,
-      queue
+      count: (pendingTutors?.length || 0) + (queue?.length || 0),
+      pendingTutors: pendingTutors || [],
+      queue: queue || []
     });
   } catch (err) {
     next(err);

@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
+import { TutorDossierModal } from '../../components/admin/TutorDossierModal';
 
 export const AdminManageTutors = () => {
   const { showToast } = useToast();
@@ -562,110 +563,40 @@ export const AdminManageTutors = () => {
 
       {/* MODAL 1: FULL APPLICATION DOSSIER INSPECTION */}
       {inspectTutor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-slate-200 max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-teal-600">Admin Inspection</span>
-                <h3 className="text-xl font-black text-slate-900">
-                  {inspectTutor.fullName || inspectTutor.user?.name}
-                </h3>
-                <div className="text-xs text-slate-400 font-mono">Application ID: {inspectTutor.applicationId}</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setInspectTutor(null)}
-                className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              {/* Private Contact & Address Details */}
-              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
-                <span className="font-extrabold text-amber-950 uppercase tracking-wider text-[11px] block">
-                  Private Contact & Residential Address (Confidential)
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-slate-800">
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Mobile</span>
-                    <span className="font-bold">{inspectTutor.user?.phone || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">WhatsApp</span>
-                    <span className="font-bold">{inspectTutor.whatsappNumber || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Email</span>
-                    <span className="font-bold">{inspectTutor.user?.email || '—'}</span>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Exact Address</span>
-                  <span className="font-bold text-slate-900">
-                    {inspectTutor.fullAddressPrivate || inspectTutor.centreDetails?.fullAddress || 'No full address entered.'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Education & Qualifications */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <span className="font-extrabold text-slate-900 uppercase tracking-wider text-[11px] block">
-                  Academic Credentials
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Highest Qualification</span>
-                    <span className="font-bold">{inspectTutor.highestQualification || '—'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Degree / College</span>
-                    <span className="font-bold">{inspectTutor.degreeCourseName || '—'} ({inspectTutor.collegeUniversity || '—'})</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Documents */}
-              {inspectTutor.verificationDocuments?.length > 0 && (
-                <div className="space-y-2">
-                  <span className="font-extrabold text-slate-900 uppercase tracking-wider text-[11px] block">
-                    Confidential Uploaded Documents ({inspectTutor.verificationDocuments.length})
-                  </span>
-                  <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
-                    {inspectTutor.verificationDocuments.map((doc, idx) => (
-                      <div key={idx} className="p-3 flex items-center justify-between bg-slate-50 text-[11px]">
-                        <div>
-                          <div className="font-bold text-slate-800">{doc.title || doc.originalName}</div>
-                          <span className="text-slate-400 capitalize">{doc.docType} • Status: {doc.status}</span>
-                        </div>
-                        <a
-                          href={`/api/tutors/qualifications/${doc._id}/document`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-3 py-1 rounded-lg bg-teal-600 text-white font-bold flex items-center gap-1 shadow-2xs"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>View Doc</span>
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setInspectTutor(null)}
-                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs cursor-pointer"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
+        <TutorDossierModal
+          tutor={inspectTutor}
+          onClose={() => setInspectTutor(null)}
+          onApprove={async (tutorId) => {
+            try {
+              const res = await apiRequest(`/admin/tutors/${tutorId}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'approved', adminNotes: 'Approved from dossier inspection' })
+              });
+              if (res.success) {
+                showToast('🎉 Tutor application approved and published live!', 'success');
+                setInspectTutor(null);
+                fetchTutors();
+              }
+            } catch (err) {
+              showToast(err.message || 'Approval failed', 'error');
+            }
+          }}
+          onReject={async (tutorId, reason) => {
+            try {
+              const res = await apiRequest(`/admin/tutors/${tutorId}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'rejected', adminNotes: reason || 'Rejected from dossier inspection' })
+              });
+              if (res.success) {
+                showToast('Tutor application marked as rejected.', 'success');
+                setInspectTutor(null);
+                fetchTutors();
+              }
+            } catch (err) {
+              showToast(err.message || 'Rejection failed', 'error');
+            }
+          }}
+        />
       )}
 
       {/* MODAL 2: UPDATE STATUS (APPROVE, REJECT, DEACTIVATE) */}
