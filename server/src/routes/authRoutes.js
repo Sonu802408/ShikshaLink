@@ -4,7 +4,8 @@ import {
   login,
   getMe,
   updateMe,
-  bootstrapAdmin
+  bootstrapAdmin,
+  resetPassword
 } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
 import { authLimiter } from '../middleware/rateLimiter.js';
@@ -14,6 +15,7 @@ const router = express.Router();
 
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
+router.post('/reset-password', authLimiter, resetPassword);
 router.get('/me', protect, getMe);
 router.put('/me', protect, uploadAvatar.single('avatar'), updateMe);
 router.post('/bootstrap-admin', authLimiter, bootstrapAdmin);

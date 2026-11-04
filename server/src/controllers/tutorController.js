@@ -5,6 +5,7 @@ import { TutorProfile } from '../models/TutorProfile.js';
 import { TutorQualification } from '../models/TutorQualification.js';
 import { Review } from '../models/Review.js';
 import { User } from '../models/User.js';
+import { createNotification } from '../services/notificationService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -538,12 +539,12 @@ export const submitTutorProfile = async (req, res, next) => {
     if (profile.area) profile.primaryLocality = profile.area;
     if (profile.city) profile.city = profile.city;
 
-    // Mark published
-    profile.profileStatus = 'published';
+    // Require Admin Verification before publishing
+    profile.profileStatus = 'pending_review';
     profile.applicationStatus = 'applied';
     profile.isInCart = true;
-    profile.isPublished = true;
-    profile.isAcceptingStudents = true;
+    profile.isPublished = false;
+    profile.isAcceptingStudents = false;
     profile.termsAccepted = true;
     profile.submittedAt = new Date();
     profile.registrationStep = 9;
@@ -556,7 +557,7 @@ export const submitTutorProfile = async (req, res, next) => {
     profile.statusHistory.push({
       status: 'applied',
       changedBy: req.user.id,
-      reason: 'Application submitted by tutor'
+      reason: 'Application submitted by tutor for administrator verification'
     });
 
     if (data.fullName && data.fullName.trim()) {
@@ -565,6 +566,30 @@ export const submitTutorProfile = async (req, res, next) => {
 
     await profile.save();
 
+    // Notify administrators and tutor
+    try {
+      const admins = await User.find({ role: 'admin' });
+      for (const admin of admins) {
+        await createNotification({
+          recipient: admin._id,
+          sender: req.user.id,
+          title: '📋 New Tutor Application Pending Verification',
+          message: `${data.fullName || req.user.name || 'A tutor'} has submitted their application for verification.`,
+          type: 'verification',
+          link: '/admin/tutors'
+        });
+      }
+      await createNotification({
+        recipient: req.user.id,
+        title: '📋 Application Submitted for Admin Review',
+        message: 'Your tutor profile has been submitted to the Admin Panel. Once verified by Admin, your profile and cart will instantly become live on ShikshaLink!',
+        type: 'verification',
+        link: '/tutor/cart'
+      });
+    } catch (notifErr) {
+      console.error('Failed to dispatch notifications on wizard submit:', notifErr.message);
+    }
+
     const qualifications = await TutorQualification.find({ tutor: profile._id });
     const completion = calculateProfileCompletion(profile, qualifications);
 
@@ -572,7 +597,7 @@ export const submitTutorProfile = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Congratulations! Your tutor profile is submitted and now live on ShikshaLink.',
+      message: 'Your tutor profile has been submitted to the Admin Panel for review. Once verified by the Admin, your profile and cart will immediately go live!',
       profile: updatedProfile,
       profileCompletion: completion
     });

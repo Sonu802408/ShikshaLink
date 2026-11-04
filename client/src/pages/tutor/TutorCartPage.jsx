@@ -195,7 +195,14 @@ export const TutorCartPage = () => {
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3">
               <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
               <div className="text-xs text-emerald-900">
-                <span className="font-bold">Application Approved & Live!</span> Your profile is actively discoverable on the marketplace for parent inquiries.
+                <span className="font-bold">Application Approved & Verified!</span> Your profile is actively discoverable on the marketplace for parent inquiries.
+              </div>
+            </div>
+          ) : status === 'applied' || status === 'pending_review' ? (
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-3">
+              <Clock className="w-5 h-5 text-amber-600 shrink-0 animate-pulse" />
+              <div className="text-xs text-amber-900">
+                <span className="font-bold">Under Admin Verification:</span> Your application has been submitted to the Admin Panel. Once verified and approved by the Administrator, your profile and card will immediately go live!
               </div>
             </div>
           ) : (

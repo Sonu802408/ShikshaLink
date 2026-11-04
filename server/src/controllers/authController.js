@@ -260,3 +260,55 @@ export const bootstrapAdmin = async (req, res, next) => {
     next(err);
   }
 };
+
+// Reset Password via Registered Email or Phone
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { email, phone, newPassword } = req.body;
+
+    if ((!email && !phone) || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your registered email or phone number, along with the new password.'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long.'
+      });
+    }
+
+    const queryConditions = [];
+    if (email && email.trim()) {
+      queryConditions.push({ email: email.toLowerCase().trim() });
+    }
+    if (phone && phone.trim()) {
+      // Clean up phone search to match digits
+      const cleanPhone = phone.trim().replace(/[^0-9]/g, '');
+      queryConditions.push({ phone: phone.trim() });
+      if (cleanPhone.length >= 10) {
+        queryConditions.push({ phone: { $regex: cleanPhone.slice(-10) } });
+      }
+    }
+
+    const user = await User.findOne({ $or: queryConditions }).select('+passwordHash');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found matching this registered email or phone number.'
+      });
+    }
+
+    user.passwordHash = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Password reset successfully for ${user.name} (${user.email}). You can now log in with your new password.`
+    });
+  } catch (err) {
+    next(err);
+  }
+};

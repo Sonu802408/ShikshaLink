@@ -590,6 +590,18 @@ export const updateTutorApplicationStatus = async (req, res, next) => {
       tutor.isInCart = true;
       tutor.withdrawnAt = null;
       tutor.withdrawnReason = '';
+
+      try {
+        await createNotification({
+          recipient: tutor.user?._id || tutor.user,
+          title: '🎉 Profile Approved & Verified!',
+          message: 'Congratulations! Your tutor profile has been verified and approved by the Administrator. Your tutor card and marketplace profile are now live!',
+          type: 'verification',
+          link: '/tutor/cart'
+        });
+      } catch (notifErr) {
+        console.error('Failed to notify tutor on approval:', notifErr.message);
+      }
     } else if (status === 'inactive' || status === 'withdrawn') {
       tutor.isPublished = false;
       tutor.isAcceptingStudents = false;
