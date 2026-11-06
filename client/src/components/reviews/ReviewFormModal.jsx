@@ -71,8 +71,9 @@ export const ReviewFormModal = ({ booking, onClose, onReviewSubmitted }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] border border-slate-200/90 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/60 backdrop-blur-md">
+      <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
+        <div className="bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.3)] border border-slate-200/90 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto text-left">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
           <div>
             <h3 className="font-bold text-slate-900 text-lg tracking-tight">Leave Tutor Review</h3>
@@ -124,5 +125,6 @@ export const ReviewFormModal = ({ booking, onClose, onReviewSubmitted }) => {
         </form>
       </div>
     </div>
-  );
+  </div>
+);
 };

@@ -150,13 +150,14 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
 
   const upiDetails = data?.upiDetails || {
     vpa: 'singhsonu883661@ybl',
-    payeeName: 'Sonu Kumar',
+    payeeName: 'ShikshaLink Education',
     qrCodeUrl: '/uploads/public/payments/phonepe-qr.png'
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] border border-slate-200/90 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative">
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-950/70 backdrop-blur-md">
+      <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
+        <div className="bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] border border-slate-200/90 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200 relative my-auto text-left">
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-900 to-slate-800 text-white">
           <div className="flex items-center gap-3">
@@ -306,14 +307,14 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
                   className="w-full h-full object-contain rounded-lg"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${upiDetails.vpa || 'singhsonu883661@ybl'}&pn=${encodeURIComponent(upiDetails.payeeName || 'Sonu Kumar')}&am=${breakdown.finalAmount}&cu=INR`;
+                    e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${upiDetails.vpa || 'singhsonu883661@ybl'}&pn=${encodeURIComponent(upiDetails.payeeName || 'ShikshaLink Education')}&am=${breakdown.finalAmount}&cu=INR`;
                   }}
                 />
               </div>
 
               <div className="space-y-1">
                 <p className="font-bold text-slate-100 text-xs">
-                  Payee: {upiDetails.payeeName || 'Sonu Kumar'}
+                  Payee: {upiDetails.payeeName || 'ShikshaLink Education'}
                 </p>
                 <div className="flex items-center justify-between bg-slate-950/80 border border-slate-700 rounded-lg p-2 max-w-xs mx-auto">
                   <span className="font-mono text-[11px] text-slate-300 truncate pl-1">
@@ -392,5 +393,6 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
         )}
       </div>
     </div>
-  );
+  </div>
+);
 };

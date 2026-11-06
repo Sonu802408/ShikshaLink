@@ -17,7 +17,7 @@ export const generateOrderId = () => {
 export const generateUpiUri = ({ vpa, payeeName, amount, orderId, note }) => {
   const params = new URLSearchParams({
     pa: vpa || 'singhsonu883661@ybl',
-    pn: payeeName || 'Sonu Kumar',
+    pn: payeeName || 'ShikshaLink Education',
     am: Number(amount || 0).toFixed(2),
     cu: 'INR',
     tr: orderId,
@@ -225,7 +225,7 @@ export const createPaymentOrder = async ({
 
   const orderId = generateOrderId();
   const vpa = paymentSettings.upiId || 'singhsonu883661@ybl';
-  const payeeName = paymentSettings.upiPayeeName || 'Sonu Kumar';
+  const payeeName = paymentSettings.upiPayeeName || 'ShikshaLink Education';
   const qrCodeUrl = paymentSettings.upiQrCodeUrl || '/uploads/public/payments/phonepe-qr.png';
   const upiQrData = generateUpiUri({
     vpa,

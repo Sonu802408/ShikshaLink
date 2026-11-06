@@ -54,7 +54,7 @@ const seedDatabase = async () => {
       paymentSettings: {
         businessDisplayName: 'ShikshaLink Education',
         upiId: 'singhsonu883661@ybl',
-        upiPayeeName: 'Sonu Kumar',
+        upiPayeeName: 'ShikshaLink Education',
         upiQrCodeUrl: '/uploads/public/payments/phonepe-qr.png',
         isOnlinePaymentEnabled: true,
         isCashPaymentEnabled: false,

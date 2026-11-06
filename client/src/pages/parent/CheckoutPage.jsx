@@ -382,14 +382,14 @@ export const CheckoutPage = () => {
                         // Fallback to dynamic QR generator if image fails to load
                         e.target.onerror = null;
                         const vpa = upiDetails.vpa || 'singhsonu883661@ybl';
-                        e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=upi://pay?pa=${vpa}&pn=${encodeURIComponent(upiDetails.payeeName || 'Sonu Kumar')}&am=${breakdown.finalAmount}&cu=INR`;
+                        e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=upi://pay?pa=${vpa}&pn=${encodeURIComponent(upiDetails.payeeName || 'ShikshaLink Education')}&am=${breakdown.finalAmount}&cu=INR`;
                       }}
                     />
                   </div>
 
                   <div className="space-y-1">
                     <div className="text-xs text-teal-400 font-bold uppercase tracking-wider">
-                      Payee: {upiDetails.payeeName || 'Sonu Kumar'}
+                      Payee: {upiDetails.payeeName || 'ShikshaLink Education'}
                     </div>
                     <div className="text-lg font-black text-white">
                       Pay Exact Amount: ₹{breakdown.finalAmount}

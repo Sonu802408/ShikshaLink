@@ -60,7 +60,7 @@ const platformSettingsSchema = new Schema(
       },
       upiPayeeName: {
         type: String,
-        default: 'Sonu Kumar'
+        default: 'ShikshaLink Education'
       },
       upiQrCodeUrl: {
         type: String,

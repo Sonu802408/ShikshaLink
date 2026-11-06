@@ -39,8 +39,9 @@ export const TutorDossierModal = ({
   const docs = tutor.verificationDocuments || [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white rounded-3xl max-w-4xl w-full p-5 sm:p-7 space-y-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="min-h-full flex items-center justify-center p-3 sm:p-5 text-center">
+        <div className="bg-white rounded-3xl max-w-4xl w-full p-5 sm:p-7 space-y-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto my-auto text-left">
         {/* Top Header */}
         <div className="flex items-start justify-between border-b border-slate-100 pb-4 gap-4">
           <div className="flex items-center gap-3.5">
@@ -436,5 +437,6 @@ export const TutorDossierModal = ({
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
