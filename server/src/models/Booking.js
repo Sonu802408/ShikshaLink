@@ -35,6 +35,22 @@ const bookingSchema = new Schema(
       ref: 'ChildProfile',
       required: true
     },
+    childSnapshot: {
+      fullName: { type: String, default: '' },
+      displayName: { type: String, default: '' },
+      classGrade: { type: String, default: '' },
+      board: { type: String, default: '' },
+      medium: { type: String, default: '' },
+      school: { type: String, default: '' }
+    },
+    parentSnapshot: {
+      fullName: { type: String, default: '' },
+      phone: { type: String, default: '' },
+      email: { type: String, default: '' },
+      city: { type: String, default: '' },
+      locality: { type: String, default: '' },
+      address: { type: String, default: '' }
+    },
     requirement: {
       type: Schema.Types.ObjectId,
       ref: 'TuitionRequirement'

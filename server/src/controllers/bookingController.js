@@ -108,6 +108,22 @@ export const createBooking = async (req, res, next) => {
       tutorUser: tutor.user._id,
       tutorProfile: tutor._id,
       child: child._id,
+      childSnapshot: {
+        fullName: child.fullName,
+        displayName: child.displayName || child.fullName,
+        classGrade: child.classGrade,
+        board: child.board,
+        medium: child.medium || child.preferredLanguage || 'English',
+        school: child.school || ''
+      },
+      parentSnapshot: {
+        fullName: parentProfile.fullName || req.user.name,
+        phone: parentProfile.phone || req.user.phone,
+        email: req.user.email,
+        city: parentProfile.city || 'Delhi',
+        locality: parentProfile.locality || 'Mayur Vihar',
+        address: studentExactAddress || parentProfile.address || ''
+      },
       bookingType,
       teachingMode,
       subject,
@@ -124,9 +140,9 @@ export const createBooking = async (req, res, next) => {
       },
       status: BOOKING_STATUSES.PENDING,
       homeTuitionDetails: {
-        studentLocality: parentProfile.locality,
-        studentExactAddress: studentExactAddress || parentProfile.address,
-        parentContactPhone: req.user.phone
+        studentLocality: parentProfile.locality || 'Delhi NCR',
+        studentExactAddress: studentExactAddress || parentProfile.address || '',
+        parentContactPhone: parentProfile.phone || req.user.phone || ''
       },
       centreDetails: {
         centreName: tutor.centreDetails?.centreName || '',

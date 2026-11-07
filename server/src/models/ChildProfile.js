@@ -31,6 +31,11 @@ const childProfileSchema = new Schema(
       required: [true, 'School board is required'],
       trim: true
     },
+    medium: {
+      type: String,
+      default: 'English',
+      trim: true
+    },
     school: {
       type: String,
       trim: true,
@@ -78,6 +83,8 @@ childProfileSchema.methods.toSafePublic = function () {
     displayName: this.displayName || 'Student',
     classGrade: this.classGrade,
     board: this.board,
+    medium: this.medium || this.preferredLanguage || 'English',
+    school: this.school || '',
     subjects: this.subjects,
     preferredLanguage: this.preferredLanguage,
     learningGoals: this.learningGoals

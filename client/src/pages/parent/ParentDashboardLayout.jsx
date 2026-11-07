@@ -11,6 +11,7 @@ import {
   PlusCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getAvatarUrl } from '../../services/api';
 
 export const ParentDashboardLayout = () => {
   const { user } = useAuth();
@@ -32,12 +33,20 @@ export const ParentDashboardLayout = () => {
         {/* Mobile Parent Navigation Bar */}
         <div className="lg:hidden bg-white rounded-2xl border border-slate-200/90 shadow-xs p-3 space-y-3 mb-4">
           <div className="flex items-center gap-3 px-1">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-sm flex items-center justify-center uppercase shadow-sm ring-1 ring-teal-500/20 shrink-0">
-              {user?.name?.[0] || 'P'}
+            <div className="relative w-11 h-11 rounded-xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-sm flex items-center justify-center uppercase shadow-sm ring-1 ring-teal-500/20 overflow-hidden shrink-0">
+              <span className="select-none">{user?.name?.[0] || 'P'}</span>
+              {user?.avatar && (
+                <img
+                  src={getAvatarUrl(user.avatar)}
+                  alt={user?.name || 'Parent'}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              )}
             </div>
             <div className="truncate flex-1 min-w-0">
               <div className="font-bold text-slate-900 text-sm truncate">{user?.name}</div>
-              <div className="text-[11px] text-teal-700 font-semibold">Parent Account</div>
+              <div className="text-[11px] text-teal-700 font-semibold">Verified Parent Account</div>
             </div>
           </div>
 
@@ -68,12 +77,20 @@ export const ParentDashboardLayout = () => {
           {/* Parent Desktop Sidebar */}
           <aside className="hidden lg:block bg-white rounded-3xl border border-slate-200/90 shadow-md card-3d p-5 space-y-6 sticky top-24">
             <div className="flex items-center gap-3 px-2">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-lg flex items-center justify-center uppercase shadow-md ring-2 ring-teal-500/20">
-                {user?.name?.[0] || 'P'}
+              <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-lg flex items-center justify-center uppercase shadow-md ring-2 ring-teal-500/20 overflow-hidden shrink-0">
+                <span className="select-none">{user?.name?.[0] || 'P'}</span>
+                {user?.avatar && (
+                  <img
+                    src={getAvatarUrl(user.avatar)}
+                    alt={user?.name || 'Parent'}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
               </div>
               <div className="truncate">
                 <div className="font-bold text-slate-900 text-sm truncate">{user?.name}</div>
-                <div className="text-xs text-slate-400 font-medium">Parent Account</div>
+                <div className="text-xs text-slate-400 font-medium">Verified Parent Account</div>
               </div>
             </div>
 

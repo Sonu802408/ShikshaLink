@@ -8,15 +8,37 @@ const parentProfileSchema = new Schema(
       required: true,
       unique: true
     },
+    fullName: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    phone: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    whatsappNumber: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    avatar: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     city: {
       type: String,
       default: 'Delhi',
-      trim: true
+      trim: true,
+      required: [true, 'City is required']
     },
     locality: {
       type: String,
       default: 'Mayur Vihar Phase 1',
-      trim: true
+      trim: true,
+      required: [true, 'Area / Locality is required']
     },
     address: {
       type: String,
