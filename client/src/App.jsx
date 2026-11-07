@@ -127,8 +127,8 @@ export default function App() {
                     <Route index element={<ParentDashboard />} />
                     <Route path="children" element={<MyChildren />} />
                     <Route path="cart" element={<ParentCartPage />} />
-                    <Route path="requirements" element={<MyRequirements />} />
-                    <Route path="requirements/new" element={<CreateRequirementPage />} />
+                    <Route path="requirements" element={<Navigate to="/parent/cart" replace />} />
+                    <Route path="requirements/new" element={<Navigate to="/parent/cart" replace />} />
                     <Route path="bookings" element={<ParentBookings />} />
                     <Route path="saved-tutors" element={<ParentCartPage />} />
                     <Route path="reviews" element={<ParentReviews />} />

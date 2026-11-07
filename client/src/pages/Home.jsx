@@ -199,8 +199,8 @@ export const Home = () => {
               <Link to="/find-tutors" className="btn-3d-primary px-6 py-3 rounded-2xl text-xs sm:text-sm">
                 Explore All Tutors <ArrowRight className="w-4 h-4 ml-1" />
               </Link>
-              <Link to="/parent/requirements/new" className="btn-3d-secondary px-6 py-3 rounded-2xl text-xs sm:text-sm">
-                Post Tuition Requirement
+              <Link to={isAuthenticated && role === 'parent' ? '/parent/cart' : '/find-tutors'} className="btn-3d-secondary px-6 py-3 rounded-2xl text-xs sm:text-sm">
+                {isAuthenticated && role === 'parent' ? 'My Tutor Cart' : 'Browse Teachers'}
               </Link>
             </div>
           </div>
@@ -251,7 +251,7 @@ export const Home = () => {
 
                 <div className="pt-6 mt-6 border-t border-teal-100">
                   <Link
-                    to={isAuthenticated && role === 'parent' ? '/parent/requirements/new' : '/register?role=parent'}
+                    to={isAuthenticated && role === 'parent' ? '/parent/cart' : '/find-tutors'}
                     className="btn-3d-primary w-full py-3.5 px-6 rounded-2xl text-xs sm:text-sm uppercase tracking-wider font-bold flex items-center justify-center gap-2 shadow-lg"
                   >
                     <span>Find a Tutor</span>
