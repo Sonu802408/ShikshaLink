@@ -12,7 +12,9 @@ import {
   ArrowRight,
   Info,
   CreditCard,
-  Ban
+  Ban,
+  Smartphone,
+  Zap
 } from 'lucide-react';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -30,6 +32,8 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
   const [submitting, setSubmitting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [submittedPayment, setSubmittedPayment] = useState(null);
+  const [selectedQrTab, setSelectedQrTab] = useState('dynamic'); // 'dynamic' or 'paytm'
+  const [hasTriggeredAppPay, setHasTriggeredAppPay] = useState(false);
 
   useEffect(() => {
     const fetchCheckout = async () => {
@@ -73,11 +77,16 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
   }, [booking, showToast]);
 
   const handleCopyVpa = () => {
-    const vpa = data?.upiDetails?.vpa || 'singhsonu883661@ybl';
+    const vpa = data?.upiDetails?.vpa || '8130550381@pthdfc';
     navigator.clipboard.writeText(vpa);
     setCopiedVpa(true);
-    showToast('UPI VPA copied to clipboard!', 'success');
+    showToast('Paytm UPI ID copied to clipboard!', 'success');
     setTimeout(() => setCopiedVpa(false), 2500);
+  };
+
+  const handleTriggerAppPay = (appName) => {
+    setHasTriggeredAppPay(true);
+    showToast(`Opening ${appName}... Complete payment and tap Confirm.`, 'info');
   };
 
   const handleFileChange = (e) => {
@@ -99,11 +108,13 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
     }
   };
 
-  const handleSubmitUpi = async (e) => {
-    e.preventDefault();
+  const handleSubmitUpi = async (e, directUtr) => {
+    if (e && e.preventDefault) e.preventDefault();
 
-    if (!utrNumber.trim()) {
-      showToast('Please enter your 12-digit UPI Reference Number / UTR.', 'error');
+    const finalUtr = (directUtr || utrNumber || `UPI-PAYTM-${Date.now().toString().slice(-8)}`).trim();
+
+    if (!finalUtr || finalUtr.length < 4) {
+      showToast('Please enter a valid reference number or click Direct Pay.', 'error');
       return;
     }
 
@@ -112,8 +123,8 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
       const formData = new FormData();
       formData.append('orderId', order?.orderId || '');
       formData.append('bookingId', booking._id);
-      formData.append('transactionReference', utrNumber.trim());
-      formData.append('parentSubmissionNotes', `Submitted via Checkout Modal for ${booking.subject}`);
+      formData.append('transactionReference', finalUtr);
+      formData.append('parentSubmissionNotes', `Submitted via 1-Click Modal for ${booking.subject}`);
       if (receiptFile) {
         formData.append('receipt', receiptFile);
       }
@@ -149,10 +160,24 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
   };
 
   const upiDetails = data?.upiDetails || {
-    vpa: 'singhsonu883661@ybl',
-    payeeName: 'ShikshaLink Education',
-    qrCodeUrl: '/uploads/public/payments/phonepe-qr.png'
+    vpa: '8130550381@pthdfc',
+    payeeName: 'ShikshaLink Education (Sonu Kumar)',
+    qrCodeUrl: '/uploads/public/payments/paytm-qr.png'
   };
+
+  const vpa = upiDetails?.vpa || '8130550381@pthdfc';
+  const payeeName = upiDetails?.payeeName || 'ShikshaLink Education (Sonu Kumar)';
+  const amount = breakdown.finalAmount;
+  const orderRef = order?.orderId || booking?._id || 'ORD';
+
+  const standardUpiUri = `upi://pay?pa=${vpa}&pn=${encodeURIComponent('ShikshaLink Education')}&am=${amount}&tr=${orderRef}&tn=${encodeURIComponent('Tuition ' + (booking.subject || 'ShikshaLink'))}&cu=INR`;
+  const paytmUri = `paytmmp://pay?pa=${vpa}&pn=${encodeURIComponent('ShikshaLink Education')}&am=${amount}&tr=${orderRef}&tn=${encodeURIComponent('Tuition ' + (booking.subject || 'ShikshaLink'))}&cu=INR`;
+  const gpayUri = `gpay://upi/pay?pa=${vpa}&pn=${encodeURIComponent('ShikshaLink Education')}&am=${amount}&tr=${orderRef}&tn=${encodeURIComponent('Tuition ' + (booking.subject || 'ShikshaLink'))}&cu=INR`;
+  const phonepeUri = `phonepe://pay?pa=${vpa}&pn=${encodeURIComponent('ShikshaLink Education')}&am=${amount}&tr=${orderRef}&tn=${encodeURIComponent('Tuition ' + (booking.subject || 'ShikshaLink'))}&cu=INR`;
+
+  const dynamicQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=6&data=${encodeURIComponent(standardUpiUri)}`;
+  const staticQrUrl = upiDetails?.qrCodeUrl || '/uploads/public/payments/paytm-qr.png';
+  const activeQrSrc = selectedQrTab === 'dynamic' ? dynamicQrUrl : staticQrUrl;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-950/70 backdrop-blur-md">
@@ -298,32 +323,132 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
               </div>
             </div>
 
-            {/* UPI QR Presentation */}
+            {/* 1-Click Mobile Pay Buttons */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-teal-950 text-white rounded-2xl p-4 space-y-3 shadow-md border border-slate-700/60">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center">
+                    <Smartphone className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-[11px] font-black uppercase tracking-wider text-white">
+                    1-Click Mobile Pay
+                  </span>
+                </div>
+                <span className="text-[9px] bg-teal-500 text-slate-950 font-black px-2 py-0.5 rounded-full">
+                  NO UTR NEEDED
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {/* Paytm */}
+                <a
+                  href={paytmUri}
+                  onClick={() => handleTriggerAppPay('Paytm')}
+                  className="p-2.5 rounded-xl bg-[#002e6e] hover:bg-[#002255] text-white flex flex-col items-center justify-center gap-0.5 text-center font-bold text-xs shadow-sm transition-all hover:scale-[1.02] cursor-pointer border border-cyan-400/30"
+                >
+                  <span className="text-xs font-black">Paytm</span>
+                  <span className="text-[9px] text-cyan-200">1-Tap Pay</span>
+                </a>
+
+                {/* Google Pay */}
+                <a
+                  href={gpayUri}
+                  onClick={() => handleTriggerAppPay('Google Pay')}
+                  className="p-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 flex flex-col items-center justify-center gap-0.5 text-center font-bold text-xs shadow-sm transition-all hover:scale-[1.02] cursor-pointer border border-slate-300"
+                >
+                  <span className="text-xs font-black">GPay</span>
+                  <span className="text-[9px] text-slate-600">Google Pay</span>
+                </a>
+
+                {/* PhonePe */}
+                <a
+                  href={phonepeUri}
+                  onClick={() => handleTriggerAppPay('PhonePe')}
+                  className="p-2.5 rounded-xl bg-[#5f259f] hover:bg-[#4d1d82] text-white flex flex-col items-center justify-center gap-0.5 text-center font-bold text-xs shadow-sm transition-all hover:scale-[1.02] cursor-pointer border border-purple-400/30"
+                >
+                  <span className="text-xs font-black">PhonePe</span>
+                  <span className="text-[9px] text-purple-200">1-Tap Pay</span>
+                </a>
+
+                {/* Any UPI App */}
+                <a
+                  href={standardUpiUri}
+                  onClick={() => handleTriggerAppPay('UPI App')}
+                  className="p-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white flex flex-col items-center justify-center gap-0.5 text-center font-bold text-xs shadow-sm transition-all hover:scale-[1.02] cursor-pointer border border-emerald-400/40"
+                >
+                  <span className="text-xs font-black flex items-center gap-1">Any UPI <Zap className="w-3 h-3 text-amber-300 fill-amber-300" /></span>
+                  <span className="text-[9px] text-teal-100">BHIM/Cred</span>
+                </a>
+              </div>
+
+              {hasTriggeredAppPay && (
+                <button
+                  type="button"
+                  onClick={() => handleSubmitUpi(null, `UPI-APP-${Date.now().toString().slice(-8)}`)}
+                  disabled={submitting}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-transform hover:scale-[1.01]"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>I Have Completed Payment — Confirm Booking</span>
+                </button>
+              )}
+            </div>
+
+            {/* UPI QR Presentation with Tab Switcher */}
             <div className="bg-slate-900 text-white p-4 rounded-2xl text-center space-y-3">
+              {/* Tab Selector */}
+              <div className="flex items-center justify-center gap-1.5 bg-slate-950/70 p-1 rounded-xl max-w-xs mx-auto border border-slate-700/60">
+                <button
+                  type="button"
+                  onClick={() => setSelectedQrTab('dynamic')}
+                  className={`flex-1 py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                    selectedQrTab === 'dynamic'
+                      ? 'bg-teal-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  ⚡ Locked QR (₹{breakdown.finalAmount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedQrTab('paytm')}
+                  className={`flex-1 py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                    selectedQrTab === 'paytm'
+                      ? 'bg-teal-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  🔵 Paytm QR
+                </button>
+              </div>
+
               <div className="w-48 h-48 mx-auto p-2 bg-white rounded-xl shadow-md flex items-center justify-center">
                 <img
-                  src={upiDetails.qrCodeUrl || '/uploads/public/payments/phonepe-qr.png'}
+                  src={activeQrSrc}
                   alt="UPI Payment QR Code"
                   className="w-full h-full object-contain rounded-lg"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${upiDetails.vpa || 'singhsonu883661@ybl'}&pn=${encodeURIComponent(upiDetails.payeeName || 'ShikshaLink Education')}&am=${breakdown.finalAmount}&cu=INR`;
+                    e.target.src = dynamicQrUrl;
                   }}
                 />
               </div>
 
               <div className="space-y-1">
                 <p className="font-bold text-slate-100 text-xs">
-                  Payee: {upiDetails.payeeName || 'ShikshaLink Education'}
+                  Payee: {payeeName}
+                </p>
+                <p className="text-[11px] text-teal-400 font-extrabold">
+                  Exact Amount: ₹{breakdown.finalAmount}
                 </p>
                 <div className="flex items-center justify-between bg-slate-950/80 border border-slate-700 rounded-lg p-2 max-w-xs mx-auto">
                   <span className="font-mono text-[11px] text-slate-300 truncate pl-1">
-                    {upiDetails.vpa || 'singhsonu883661@ybl'}
+                    {vpa}
                   </span>
                   <button
                     type="button"
                     onClick={handleCopyVpa}
-                    className="px-2.5 py-1 rounded bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-[10px] flex items-center gap-1 shrink-0"
+                    className="px-2.5 py-1 rounded bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-[10px] flex items-center gap-1 shrink-0 cursor-pointer"
                   >
                     {copiedVpa ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                     <span>{copiedVpa ? 'Copied' : 'Copy'}</span>
@@ -335,15 +460,17 @@ export const PaymentModal = ({ booking, onClose, onPaymentSuccess }) => {
             {/* Submission Form */}
             <form onSubmit={handleSubmitUpi} className="space-y-3 pt-1">
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  12-Digit UPI Reference Number (UTR) <span className="text-rose-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                    UPI Reference / UTR Number
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-semibold">(Optional if paid via 1-Click)</span>
+                </div>
                 <input
                   type="text"
-                  required
                   value={utrNumber}
                   onChange={(e) => setUtrNumber(e.target.value.trim())}
-                  placeholder="e.g. 430129847192"
+                  placeholder="e.g. 430129847192 (or leave empty if paid via app)"
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-300 font-mono text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>

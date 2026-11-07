@@ -6,6 +6,7 @@ import { app } from '../src/server.js';
 import { PlatformSettings } from '../src/models/PlatformSettings.js';
 import { Payment } from '../src/models/Payment.js';
 import { Booking } from '../src/models/Booking.js';
+import { User } from '../src/models/User.js';
 import { TEACHING_MODES, PAYMENT_STATUSES, BOOKING_STATUSES } from '../src/config/constants.js';
 
 describe('Online Payments, Admin UPI/QR Settings, and Checkout Verification Tests', () => {
@@ -85,7 +86,23 @@ describe('Online Payments, Admin UPI/QR Settings, and Checkout Verification Test
         termsAccepted: true
       });
 
-    // 3. Login Admin
+    // 3. Ensure and Login Admin
+    let adminDoc = await User.findOne({ email: 'admin@shikshalink.in' });
+    if (!adminDoc) {
+      adminDoc = await User.create({
+        name: 'ShikshaLink Admin',
+        email: 'admin@shikshalink.in',
+        phone: '+91 98100 00001',
+        passwordHash: 'Admin@12345',
+        role: 'admin',
+        isEmailVerified: true,
+        isPhoneVerified: true
+      });
+    } else {
+      adminDoc.passwordHash = 'Admin@12345';
+      await adminDoc.save();
+    }
+
     const adminLogin = await request(app)
       .post('/api/auth/login')
       .send({

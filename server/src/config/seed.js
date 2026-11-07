@@ -53,9 +53,9 @@ const seedDatabase = async () => {
       },
       paymentSettings: {
         businessDisplayName: 'ShikshaLink Education',
-        upiId: 'singhsonu883661@ybl',
-        upiPayeeName: 'ShikshaLink Education',
-        upiQrCodeUrl: '/uploads/public/payments/phonepe-qr.png',
+        upiId: '8130550381@pthdfc',
+        upiPayeeName: 'ShikshaLink Education (Sonu Kumar)',
+        upiQrCodeUrl: '/uploads/public/payments/paytm-qr.png',
         isOnlinePaymentEnabled: true,
         isCashPaymentEnabled: false,
         platformFeeType: 'percentage',

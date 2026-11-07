@@ -16,8 +16,8 @@ export const generateOrderId = () => {
 
 export const generateUpiUri = ({ vpa, payeeName, amount, orderId, note }) => {
   const params = new URLSearchParams({
-    pa: vpa || 'singhsonu883661@ybl',
-    pn: payeeName || 'ShikshaLink Education',
+    pa: vpa || '8130550381@pthdfc',
+    pn: payeeName || 'ShikshaLink Education (Sonu Kumar)',
     am: Number(amount || 0).toFixed(2),
     cu: 'INR',
     tr: orderId,
@@ -153,10 +153,10 @@ export const getCheckoutSummary = async ({ bookingId, parentUserId }) => {
     },
     upiDetails: {
       businessDisplayName: paymentSettings.businessDisplayName || 'ShikshaLink Education',
-      vpa: paymentSettings.upiId || 'singhsonu883661@ybl',
-      payeeName: paymentSettings.upiPayeeName || 'Sonu Kumar',
-      qrCodeUrl: paymentSettings.upiQrCodeUrl || '/uploads/public/payments/phonepe-qr.png',
-      paymentInstructions: paymentSettings.paymentInstructions || 'Scan QR, pay the exact amount, and enter your 12-digit UPI Reference Number / UTR below.',
+      vpa: paymentSettings.upiId || '8130550381@pthdfc',
+      payeeName: paymentSettings.upiPayeeName || 'ShikshaLink Education (Sonu Kumar)',
+      qrCodeUrl: paymentSettings.upiQrCodeUrl || '/uploads/public/payments/paytm-qr.png',
+      paymentInstructions: paymentSettings.paymentInstructions || 'Pay instantly using Paytm, Google Pay, PhonePe or scan the QR code below.',
       paymentVerificationMethod: paymentSettings.paymentVerificationMethod || 'manual_upi'
     },
     policies: {
@@ -224,9 +224,9 @@ export const createPaymentOrder = async ({
   }
 
   const orderId = generateOrderId();
-  const vpa = paymentSettings.upiId || 'singhsonu883661@ybl';
-  const payeeName = paymentSettings.upiPayeeName || 'ShikshaLink Education';
-  const qrCodeUrl = paymentSettings.upiQrCodeUrl || '/uploads/public/payments/phonepe-qr.png';
+  const vpa = paymentSettings.upiId || '8130550381@pthdfc';
+  const payeeName = paymentSettings.upiPayeeName || 'ShikshaLink Education (Sonu Kumar)';
+  const qrCodeUrl = paymentSettings.upiQrCodeUrl || '/uploads/public/payments/paytm-qr.png';
   const upiQrData = generateUpiUri({
     vpa,
     payeeName,

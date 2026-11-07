@@ -88,10 +88,10 @@ const paymentSchema = new Schema(
       default: PAYMENT_STATUSES.CREATED
     },
     upiDetails: {
-      vpa: { type: String, default: 'singhsonu883661@ybl' },
-      payeeName: { type: String, default: 'ShikshaLink Education' },
+      vpa: { type: String, default: '8130550381@pthdfc' },
+      payeeName: { type: String, default: 'ShikshaLink Education (Sonu Kumar)' },
       qrCodeData: { type: String, default: '' },
-      qrCodeUrl: { type: String, default: '/uploads/public/payments/phonepe-qr.png' },
+      qrCodeUrl: { type: String, default: '/uploads/public/payments/paytm-qr.png' },
       expiresAt: { type: Date }
     },
     gatewaySignature: {

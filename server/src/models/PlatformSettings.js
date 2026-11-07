@@ -56,15 +56,15 @@ const platformSettingsSchema = new Schema(
       },
       upiId: {
         type: String,
-        default: 'singhsonu883661@ybl'
+        default: '8130550381@pthdfc'
       },
       upiPayeeName: {
         type: String,
-        default: 'ShikshaLink Education'
+        default: 'ShikshaLink Education (Sonu Kumar)'
       },
       upiQrCodeUrl: {
         type: String,
-        default: '/uploads/public/payments/phonepe-qr.png'
+        default: '/uploads/public/payments/paytm-qr.png'
       },
       isOnlinePaymentEnabled: {
         type: Boolean,
