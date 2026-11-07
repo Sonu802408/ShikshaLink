@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   X,
   Sparkles,
@@ -23,6 +23,16 @@ export const SpecialOfferModal = ({ autoOpenDelay = 600 }) => {
 
   const cardRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Hide modal & launcher completely on dashboard and auth pages so it never blocks mobile screens
+  const isExcludedPath =
+    location.pathname.startsWith('/tutor') ||
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/parent') ||
+    location.pathname === '/login' ||
+    location.pathname === '/register' ||
+    location.pathname === '/forgot-password';
 
   // Auto-open on page load
   useEffect(() => {
@@ -105,6 +115,10 @@ export const SpecialOfferModal = ({ autoOpenDelay = 600 }) => {
       navigate('/register?role=tutor');
     }
   };
+
+  if (isExcludedPath) {
+    return null;
+  }
 
   return (
     <>

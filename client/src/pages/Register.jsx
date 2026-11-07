@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { GraduationCap, Lock, Mail, Phone, User, MapPin, ArrowRight, BookOpen } from 'lucide-react';
+import { GraduationCap, Lock, Mail, Phone, User, MapPin, ArrowRight, BookOpen, KeyRound, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -19,9 +19,11 @@ export const Register = () => {
   const [locality, setLocality] = useState('Mayur Vihar Phase 1');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!name || !email || !phone || !password) {
       showToast('Please fill in all required fields.', 'error');
       return;
@@ -52,7 +54,9 @@ export const Register = () => {
         navigate('/parent/children');
       }
     } catch (err) {
-      showToast(err.message || 'Registration failed', 'error');
+      const msg = err.message || 'Registration failed';
+      setErrorMessage(msg);
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -72,6 +76,34 @@ export const Register = () => {
           <h2 className="text-2xl font-extrabold text-slate-900 pt-1 tracking-tight">Create your account</h2>
           <p className="text-xs text-slate-500">Join the transparent education marketplace</p>
         </div>
+
+        {/* Error message alert with direct Forgot Password action */}
+        {errorMessage && (
+          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-slate-800 text-xs space-y-2 animate-in fade-in">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+              <div>
+                <p className="font-bold text-amber-900">{errorMessage}</p>
+                {errorMessage.toLowerCase().includes('already exists') && (
+                  <p className="text-[11px] text-slate-600 mt-1">
+                    An account with this email is already registered. If you forgot your password, you can reset it instantly:
+                  </p>
+                )}
+              </div>
+            </div>
+            {errorMessage.toLowerCase().includes('already exists') && (
+              <div className="pl-6">
+                <Link
+                  to={`/forgot-password?identifier=${encodeURIComponent(email)}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-[11px] shadow-xs"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Reset Password for this Email</span>
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Role Toggle Switch */}
         <div className="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-2xl shadow-inner">
@@ -180,9 +212,18 @@ export const Register = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Password
+                </label>
+                <Link
+                  to={`/forgot-password${email ? `?identifier=${encodeURIComponent(email)}` : ''}`}
+                  className="text-[11px] font-bold text-teal-600 hover:text-teal-700 hover:underline inline-flex items-center gap-1"
+                >
+                  <KeyRound className="w-3 h-3" />
+                  <span>Forgot Password?</span>
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-teal-600 absolute left-3.5 top-3" />
                 <input

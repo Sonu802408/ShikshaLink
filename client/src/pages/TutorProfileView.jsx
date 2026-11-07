@@ -24,7 +24,7 @@ import {
   Info,
   Edit3
 } from 'lucide-react';
-import { apiRequest } from '../services/api';
+import { apiRequest, getAvatarUrl } from '../services/api';
 import { VerificationBadge, TeachingModeBadge } from '../components/common/Badge';
 import { BookingModal } from '../components/bookings/BookingModal';
 import { useAuth } from '../context/AuthContext';
@@ -190,18 +190,17 @@ export const TutorProfileView = () => {
         <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="flex items-start sm:items-center gap-5">
-              <div className="w-22 h-22 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-extrabold text-3xl flex items-center justify-center uppercase shadow-md shrink-0 overflow-hidden ring-4 ring-slate-100">
-                {user.avatar ? (
+              <div className="relative w-22 h-22 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-extrabold text-3xl flex items-center justify-center uppercase shadow-md shrink-0 overflow-hidden ring-4 ring-slate-100">
+                <span className="select-none">{user.name?.[0] || tutor.fullName?.[0] || 'T'}</span>
+                {(user.avatar || tutor.avatar) && (
                   <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-full h-full object-cover"
+                    src={getAvatarUrl(user.avatar || tutor.avatar)}
+                    alt={user.name || tutor.fullName}
+                    className="absolute inset-0 w-full h-full object-cover"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
                   />
-                ) : (
-                  <span>{user.name?.[0] || 'T'}</span>
                 )}
               </div>
 

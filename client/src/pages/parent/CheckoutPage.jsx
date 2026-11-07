@@ -26,7 +26,7 @@ import {
   Zap,
   ExternalLink
 } from 'lucide-react';
-import { apiRequest } from '../../services/api';
+import { apiRequest, getAvatarUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -638,11 +638,17 @@ export const CheckoutPage = () => {
                 </span>
 
                 <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                  <div className="w-14 h-14 rounded-2xl bg-teal-600 text-white font-black text-xl flex items-center justify-center uppercase shadow-md overflow-hidden shrink-0">
-                    {tutor.avatar ? (
-                      <img src={tutor.avatar} alt={tutor.name} className="w-full h-full object-cover" />
-                    ) : (
-                      tutor.name[0]
+                  <div className="relative w-14 h-14 rounded-2xl bg-teal-600 text-white font-black text-xl flex items-center justify-center uppercase shadow-md overflow-hidden shrink-0">
+                    <span className="select-none">{tutor.name?.[0] || 'T'}</span>
+                    {tutor.avatar && (
+                      <img
+                        src={getAvatarUrl(tutor.avatar)}
+                        alt={tutor.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
                     )}
                   </div>
                   <div className="truncate">

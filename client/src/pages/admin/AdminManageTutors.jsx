@@ -29,7 +29,7 @@ import {
   LogOut,
   SlidersHorizontal
 } from 'lucide-react';
-import { apiRequest } from '../../services/api';
+import { apiRequest, getAvatarUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { TutorDossierModal } from '../../components/admin/TutorDossierModal';
 
@@ -413,11 +413,17 @@ export const AdminManageTutors = () => {
                 <div key={tutor._id} className="p-5 hover:bg-slate-50/70 transition-colors flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                   {/* Left: Avatar & Identity */}
                   <div className="flex items-start gap-4 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-sm flex items-center justify-center uppercase shadow-sm overflow-hidden shrink-0">
-                      {u.avatar ? (
-                        <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
-                      ) : (
-                        tutor.fullName?.[0] || u.name?.[0] || 'T'
+                    <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-sm flex items-center justify-center uppercase shadow-sm overflow-hidden shrink-0">
+                      <span className="select-none">{tutor.fullName?.[0] || u.name?.[0] || 'T'}</span>
+                      {(u.avatar || tutor.avatar) && (
+                        <img
+                          src={getAvatarUrl(u.avatar || tutor.avatar)}
+                          alt={tutor.fullName || u.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
                       )}
                     </div>
                     <div className="space-y-0.5 min-w-0">

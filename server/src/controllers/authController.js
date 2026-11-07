@@ -52,14 +52,18 @@ export const register = async (req, res, next) => {
         locality: locality || 'Mayur Vihar Phase 1'
       });
     } else {
+      const randomSuffix = Math.floor(10000 + Math.random() * 90000);
       profile = await TutorProfile.create({
         user: user._id,
         fullName: name,
+        applicationId: `SL-TUT-${randomSuffix}`,
         city: city || 'Delhi',
         primaryLocality: locality || 'Mayur Vihar Phase 1',
         headline: `${name} - Academic Tutor`,
+        applicationStatus: 'draft',
         profileStatus: 'draft',
         isPublished: true,
+        isInCart: true,
         registrationStep: 1
       });
     }

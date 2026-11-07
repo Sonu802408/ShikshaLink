@@ -21,6 +21,7 @@ import {
   X,
   AlertCircle
 } from 'lucide-react';
+import { getAvatarUrl } from '../../services/api';
 
 export const TutorDossierModal = ({
   tutor,
@@ -45,11 +46,17 @@ export const TutorDossierModal = ({
         {/* Top Header */}
         <div className="flex items-start justify-between border-b border-slate-100 pb-4 gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-xl flex items-center justify-center uppercase shadow-md overflow-hidden shrink-0">
-              {u.avatar ? (
-                <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
-              ) : (
-                tutor.fullName?.[0] || u.name?.[0] || 'T'
+            <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-xl flex items-center justify-center uppercase shadow-md overflow-hidden shrink-0">
+              <span className="select-none">{tutor.fullName?.[0] || u.name?.[0] || 'T'}</span>
+              {(u.avatar || tutor.avatar) && (
+                <img
+                  src={getAvatarUrl(u.avatar || tutor.avatar)}
+                  alt={tutor.fullName || u.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
               )}
             </div>
             <div>

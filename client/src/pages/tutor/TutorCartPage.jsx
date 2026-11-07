@@ -24,7 +24,7 @@ import {
   Eye,
   Calendar
 } from 'lucide-react';
-import { apiRequest } from '../../services/api';
+import { apiRequest, getAvatarUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -219,11 +219,15 @@ export const TutorCartPage = () => {
             {/* Top Profile Summary Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-xl flex items-center justify-center uppercase shadow-md ring-2 ring-slate-100 overflow-hidden shrink-0">
-                  {user?.avatar ? (
-                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    app.fullName?.[0] || user?.name?.[0] || 'T'
+                <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-xl flex items-center justify-center uppercase shadow-md ring-2 ring-slate-100 overflow-hidden shrink-0">
+                  <span className="select-none">{app.fullName?.[0] || user?.name?.[0] || 'T'}</span>
+                  {(user?.avatar || app?.avatar) && (
+                    <img
+                      src={getAvatarUrl(user?.avatar || app?.avatar)}
+                      alt={user?.name || app?.fullName}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
                   )}
                 </div>
                 <div className="space-y-1">

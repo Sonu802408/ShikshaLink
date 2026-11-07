@@ -18,6 +18,7 @@ import { PricingSafety } from './pages/PricingSafety';
 import { BecomeTutor } from './pages/BecomeTutor';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { ForgotPassword } from './pages/ForgotPassword';
 
 // Parent Dashboard Pages
 import { ParentDashboardLayout } from './pages/parent/ParentDashboardLayout';
@@ -101,6 +102,7 @@ export default function App() {
                   <Route path="/become-a-tutor" element={<BecomeTutor />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
 
                   {/* Dedicated Responsive Checkout Route */}
                   <Route

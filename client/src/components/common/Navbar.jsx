@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   GraduationCap,
@@ -27,6 +27,13 @@ export const Navbar = () => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Automatically close mobile menu and dropdowns whenever route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setUserDropdownOpen(false);
+    setNotifDropdownOpen(false);
+  }, [location.pathname, location.search]);
 
   const handleTutorNavigation = async (e) => {
     e.preventDefault();
@@ -374,115 +381,121 @@ export const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Drawer Menu */}
+      {/* Mobile Drawer Menu as Floating Overlay */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white/95 backdrop-blur-md px-4 pt-3 pb-6 space-y-3 shadow-xl">
-          <div className="flex flex-col gap-2 font-bold text-slate-700 text-xs">
-            <Link
-              to="/find-tutors"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl hover:bg-slate-50"
-            >
-              Find Tutors
-            </Link>
-            <Link
-              to="/find-tutors?mode=online"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl hover:bg-slate-50"
-            >
-              Online Tutors
-            </Link>
-            <Link
-              to="/find-tutors?mode=student_home"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl hover:bg-slate-50"
-            >
-              Home Tutors (Mayur Vihar & Delhi NCR)
-            </Link>
-            <Link
-              to="/find-tutors?mode=tutor_centre"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl hover:bg-slate-50"
-            >
-              Tutors at Teaching Centres
-            </Link>
-            <Link
-              to="/how-it-works"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl hover:bg-slate-50"
-            >
-              How It Works
-            </Link>
-            <Link
-              to="/become-a-tutor"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl text-teal-700 font-extrabold hover:bg-teal-50"
-            >
-              Become a Tutor
-            </Link>
-          </div>
+        <>
+          <div
+            className="fixed inset-0 top-16 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div className="absolute top-16 left-0 right-0 z-50 lg:hidden border-b border-slate-200 bg-white/98 backdrop-blur-md px-4 pt-3 pb-6 space-y-3 shadow-2xl max-h-[80vh] overflow-y-auto animate-in slide-in-from-top-2 duration-150">
+            <div className="flex flex-col gap-1 font-bold text-slate-700 text-xs">
+              <Link
+                to="/find-tutors"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Find Tutors
+              </Link>
+              <Link
+                to="/find-tutors?mode=online"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Online Tutors
+              </Link>
+              <Link
+                to="/find-tutors?mode=student_home"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Home Tutors (Mayur Vihar & Delhi NCR)
+              </Link>
+              <Link
+                to="/find-tutors?mode=tutor_centre"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                Tutors at Teaching Centres
+              </Link>
+              <Link
+                to="/how-it-works"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                How It Works
+              </Link>
+              <Link
+                to="/become-a-tutor"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2.5 rounded-xl text-teal-700 font-extrabold hover:bg-teal-50 transition-colors"
+              >
+                Become a Tutor
+              </Link>
+            </div>
 
-          <div className="pt-3 border-t border-slate-200">
-            {isAuthenticated ? (
-              <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider px-3">
-                  Signed in as {user?.name}
+            <div className="pt-3 border-t border-slate-200">
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3">
+                    Signed in as {user?.name}
+                  </div>
+                  <Link
+                    to={getDashboardLink()}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2.5 rounded-xl bg-teal-50 text-teal-800 font-bold text-xs"
+                  >
+                    Open Dashboard
+                  </Link>
+                  {role === 'tutor' && (
+                    <Link
+                      to="/tutor/cart"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 font-semibold text-xs"
+                    >
+                      Application & Cart
+                    </Link>
+                  )}
+                  {role === 'admin' && (
+                    <Link
+                      to="/admin/tutors"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 font-semibold text-xs"
+                    >
+                      Manage Tutors
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 text-rose-600 font-bold text-xs hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                  >
+                    Sign Out
+                  </button>
                 </div>
-                <Link
-                  to={getDashboardLink()}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2.5 rounded-xl bg-teal-50 text-teal-800 font-bold text-xs"
-                >
-                  Open Dashboard
-                </Link>
-                {role === 'tutor' && (
+              ) : (
+                <div className="flex flex-col gap-2 pt-1">
                   <Link
-                    to="/tutor/cart"
+                    to="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 font-semibold text-xs"
+                    className="w-full py-2.5 text-center text-xs font-bold rounded-xl border border-slate-300 text-slate-700"
                   >
-                    Application & Cart
+                    Login
                   </Link>
-                )}
-                {role === 'admin' && (
                   <Link
-                    to="/admin/tutors"
+                    to="/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 font-semibold text-xs"
+                    className="btn-3d-navy w-full py-2.5 text-center text-xs"
                   >
-                    Manage Tutors
+                    Sign Up
                   </Link>
-                )}
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-rose-600 font-bold text-xs"
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 pt-1">
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full py-2.5 text-center text-xs font-bold rounded-xl border border-slate-300 text-slate-700"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="btn-3d-navy w-full py-2.5 text-center text-xs"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );

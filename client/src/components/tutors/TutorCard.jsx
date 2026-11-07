@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Clock, Heart, Sparkles, Code2, Globe } from 'lucide-react';
 import { VerificationBadge, TeachingModeBadge } from '../common/Badge';
+import { getAvatarUrl } from '../../services/api';
 
 export const TutorCard = ({
   tutor,
@@ -31,20 +32,18 @@ export const TutorCard = ({
           <div className="flex items-start gap-3">
             <Link
               to={`/tutors/${tutor._id}`}
-              className="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0 overflow-hidden ring-2 ring-slate-100 hover:opacity-95 transition-opacity"
+              className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0 overflow-hidden ring-2 ring-slate-100 hover:opacity-95 transition-opacity"
             >
-              {user.avatar ? (
+              <span className="uppercase select-none">{user.name?.[0] || tutor.fullName?.[0] || 'T'}</span>
+              {(user.avatar || tutor.avatar) && (
                 <img
-                  src={user.avatar}
-                  alt={user.name || 'Tutor photo'}
-                  className="w-full h-full object-cover"
+                  src={getAvatarUrl(user.avatar || tutor.avatar)}
+                  alt={user.name || tutor.fullName || 'Tutor photo'}
+                  className="absolute inset-0 w-full h-full object-cover"
                   onError={(e) => {
-                    // Fallback to initial if image fails
                     e.currentTarget.style.display = 'none';
                   }}
                 />
-              ) : (
-                <span className="uppercase">{user.name?.[0] || 'T'}</span>
               )}
             </Link>
 

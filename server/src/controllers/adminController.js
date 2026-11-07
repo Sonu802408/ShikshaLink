@@ -65,15 +65,20 @@ export const getVerificationQueue = async (req, res, next) => {
     if (status === 'pending') {
       tutorFilter.$or = [
         { applicationStatus: { $in: ['applied', 'pending_review'] } },
-        { profileStatus: 'pending_review' }
+        { profileStatus: 'pending_review' },
+        { submittedAt: { $ne: null } }
       ];
     } else if (status === 'verified' || status === 'approved') {
       tutorFilter.$or = [
         { applicationStatus: 'approved' },
         { profileStatus: 'published' }
       ];
+    } else if (status === 'draft' || status === 'drafts') {
+      tutorFilter.applicationStatus = 'draft';
     } else if (status === 'rejected') {
       tutorFilter.applicationStatus = 'rejected';
+    } else if (status === 'all') {
+      // no filter - all tutor applications
     }
 
     const pendingTutors = await TutorProfile.find(tutorFilter)
@@ -480,6 +485,16 @@ export const getAllTutorApplications = async (req, res, next) => {
         query.isAcceptingStudents = true;
         query.isPublished = true;
         query.applicationStatus = { $nin: ['withdrawn', 'inactive', 'rejected', 'draft'] };
+      } else if (status === 'applied') {
+        query.$or = [
+          { applicationStatus: { $in: ['applied', 'pending_review'] } },
+          { profileStatus: 'pending_review' }
+        ];
+      } else if (status === 'draft') {
+        query.$or = [
+          { applicationStatus: 'draft' },
+          { profileStatus: 'draft' }
+        ];
       } else {
         query.applicationStatus = status;
       }
@@ -505,7 +520,7 @@ export const getAllTutorApplications = async (req, res, next) => {
       query.teachingModes = teachingMode.trim();
     }
 
-    // Keyword search: search in headline, locality, applicationId, subjects
+    // Keyword search: search in fullName, headline, locality, applicationId, subjects
     if (search && search.trim()) {
       const s = search.trim();
       const regex = new RegExp(s, 'i');
@@ -518,15 +533,17 @@ export const getAllTutorApplications = async (req, res, next) => {
 
       query.$or = [
         { user: { $in: userIds } },
+        { fullName: regex },
         { applicationId: regex },
         { headline: regex },
         { primaryLocality: regex },
+        { area: regex },
         { city: regex },
         { subjects: regex }
       ];
     }
 
-    let sort = { createdAt: -1 };
+    let sort = { updatedAt: -1, createdAt: -1 };
     if (sortBy === 'oldest') sort = { createdAt: 1 };
     else if (sortBy === 'experience') sort = { yearsOfExperience: -1 };
     else if (sortBy === 'fee_low') sort = { 'feeStructure.hourlyRate': 1 };

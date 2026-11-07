@@ -12,6 +12,24 @@ export const setStoredToken = (token) => {
   }
 };
 
+export const getAvatarUrl = (avatarPath) => {
+  if (!avatarPath || typeof avatarPath !== 'string') return null;
+  if (
+    avatarPath.startsWith('http://') ||
+    avatarPath.startsWith('https://') ||
+    avatarPath.startsWith('blob:') ||
+    avatarPath.startsWith('data:')
+  ) {
+    return avatarPath;
+  }
+  const cleanPath = avatarPath.startsWith('/') ? avatarPath : `/${avatarPath}`;
+  if (API_BASE && API_BASE.startsWith('http')) {
+    const backendHost = API_BASE.replace(/\/api\/?$/, '');
+    return `${backendHost}${cleanPath}`;
+  }
+  return cleanPath;
+};
+
 export const apiRequest = async (endpoint, options = {}) => {
   const token = getStoredToken();
   const headers = { ...options.headers };

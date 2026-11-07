@@ -45,6 +45,11 @@ const tutorProfileSchema = new Schema(
       default: '',
       trim: true
     },
+    avatar: {
+      type: String,
+      default: '',
+      trim: true
+    },
     applicationId: {
       type: String,
       unique: true,

@@ -18,7 +18,7 @@ import {
   Layers,
   Sparkles
 } from 'lucide-react';
-import { apiRequest } from '../../services/api';
+import { apiRequest, getAvatarUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { TutorDossierModal } from '../../components/admin/TutorDossierModal';
 
@@ -178,8 +178,8 @@ export const AdminVerificationQueue = () => {
         </div>
 
         {/* Status Filter */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold self-end sm:self-auto">
-          {['pending', 'verified', 'rejected', 'all'].map((tab) => (
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold self-end sm:self-auto flex-wrap">
+          {['pending', 'drafts', 'verified', 'rejected', 'all'].map((tab) => (
             <button
               key={tab}
               onClick={() => setStatusFilter(tab)}
@@ -189,7 +189,7 @@ export const AdminVerificationQueue = () => {
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              {tab}
+              {tab === 'drafts' ? 'Drafts / In-Progress' : tab}
             </button>
           ))}
         </div>
@@ -252,11 +252,17 @@ export const AdminVerificationQueue = () => {
                   {/* Top Bar */}
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-lg flex items-center justify-center uppercase shadow-md overflow-hidden shrink-0">
-                        {u.avatar ? (
-                          <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
-                        ) : (
-                          tutor.fullName?.[0] || u.name?.[0] || 'T'
+                      <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-700 to-teal-600 text-white font-black text-lg flex items-center justify-center uppercase shadow-md overflow-hidden shrink-0">
+                        <span className="select-none">{tutor.fullName?.[0] || u.name?.[0] || 'T'}</span>
+                        {(u.avatar || tutor.avatar) && (
+                          <img
+                            src={getAvatarUrl(u.avatar || tutor.avatar)}
+                            alt={tutor.fullName || u.name}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
                         )}
                       </div>
                       <div>
@@ -273,10 +279,18 @@ export const AdminVerificationQueue = () => {
                                 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                                 : tutor.applicationStatus === 'rejected'
                                 ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                                : tutor.applicationStatus === 'draft'
+                                ? 'bg-slate-100 text-slate-800 border border-slate-300'
                                 : 'bg-amber-50 text-amber-800 border border-amber-200 animate-pulse'
                             }`}
                           >
-                            {isApproved ? 'Verified & Live' : tutor.applicationStatus === 'rejected' ? 'Rejected' : 'Pending Verification'}
+                            {isApproved
+                              ? 'Verified & Live'
+                              : tutor.applicationStatus === 'rejected'
+                              ? 'Rejected'
+                              : tutor.applicationStatus === 'draft'
+                              ? 'Draft (In-Progress)'
+                              : 'Pending Verification'}
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 font-medium">

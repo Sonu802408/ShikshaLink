@@ -8,7 +8,6 @@ import {
   Star,
   Settings,
   Activity,
-  FileText,
   DollarSign,
   GraduationCap
 } from 'lucide-react';
@@ -30,11 +29,44 @@ export const AdminDashboardLayout = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 py-4 sm:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        {/* Mobile Admin Navigation Bar */}
+        <div className="lg:hidden bg-slate-900 text-white rounded-2xl p-3 space-y-3 mb-4 shadow-lg border border-slate-800">
+          <div className="flex items-center gap-3 px-1">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-400 to-emerald-400 text-slate-950 font-black text-base flex items-center justify-center uppercase shadow-sm shrink-0">
+              A
+            </div>
+            <div className="truncate flex-1 min-w-0">
+              <div className="font-bold text-white text-sm truncate">{user?.name}</div>
+              <div className="text-[11px] text-teal-400 font-bold uppercase tracking-wider">Super Administrator</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar pt-2 border-t border-slate-800">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 px-3 py-2 rounded-xl text-xs whitespace-nowrap shrink-0 transition-all ${
+                    isActive
+                      ? 'bg-teal-500 text-slate-950 font-bold shadow-xs'
+                      : 'bg-slate-800 text-slate-300 hover:text-white font-medium'
+                  }`
+                }
+              >
+                <item.icon className="w-3.5 h-3.5 shrink-0" />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-          {/* Admin Sidebar */}
-          <aside className="bg-slate-900 text-white rounded-3xl p-5 space-y-6 shadow-xl card-3d border border-slate-800 sticky top-24">
+          {/* Admin Desktop Sidebar */}
+          <aside className="hidden lg:block bg-slate-900 text-white rounded-3xl p-5 space-y-6 shadow-xl card-3d border border-slate-800 sticky top-24">
             <div className="flex items-center gap-3 px-2">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-400 to-emerald-400 text-slate-950 font-black text-lg flex items-center justify-center uppercase shadow-md ring-2 ring-teal-400/30">
                 A
