@@ -3,12 +3,11 @@ import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
-  FileText,
   CalendarCheck,
   Heart,
   Star,
   LifeBuoy,
-  PlusCircle
+  ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getAvatarUrl } from '../../services/api';
@@ -19,8 +18,7 @@ export const ParentDashboardLayout = () => {
   const navItems = [
     { to: '/parent', label: 'Overview', icon: LayoutDashboard, end: true },
     { to: '/parent/children', label: 'My Children', icon: Users },
-    { to: '/parent/requirements', label: 'Tuition Requests', icon: FileText },
-    { to: '/parent/requirements/new', label: 'Post New Request', icon: PlusCircle, highlight: true },
+    { to: '/parent/cart', label: 'Tutor Cart', icon: ShoppingBag, highlight: true },
     { to: '/parent/bookings', label: 'Bookings & Demos', icon: CalendarCheck },
     { to: '/parent/saved-tutors', label: 'Saved Tutors', icon: Heart },
     { to: '/parent/reviews', label: 'My Reviews', icon: Star },

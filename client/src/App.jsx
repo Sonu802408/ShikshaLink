@@ -23,6 +23,7 @@ import { ForgotPassword } from './pages/ForgotPassword';
 // Parent Dashboard Pages
 import { ParentDashboardLayout } from './pages/parent/ParentDashboardLayout';
 import { ParentDashboard } from './pages/parent/ParentDashboard';
+import { ParentCartPage } from './pages/parent/ParentCartPage';
 import { MyChildren } from './pages/parent/MyChildren';
 import { MyRequirements } from './pages/parent/MyRequirements';
 import { CreateRequirementPage } from './pages/parent/CreateRequirementPage';
@@ -125,10 +126,11 @@ export default function App() {
                   >
                     <Route index element={<ParentDashboard />} />
                     <Route path="children" element={<MyChildren />} />
+                    <Route path="cart" element={<ParentCartPage />} />
                     <Route path="requirements" element={<MyRequirements />} />
                     <Route path="requirements/new" element={<CreateRequirementPage />} />
                     <Route path="bookings" element={<ParentBookings />} />
-                    <Route path="saved-tutors" element={<SavedTutorsPage />} />
+                    <Route path="saved-tutors" element={<ParentCartPage />} />
                     <Route path="reviews" element={<ParentReviews />} />
                     <Route path="support" element={<ParentSupport />} />
                   </Route>

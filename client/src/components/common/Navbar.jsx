@@ -167,6 +167,18 @@ export const Navbar = () => {
                   </Link>
                 )}
 
+                {/* Parent Tutor Cart Shortcut */}
+                {role === 'parent' && (
+                  <Link
+                    to="/parent/cart"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-xs transition-all border border-teal-200/80 shadow-2xs"
+                    title="Tutor Cart"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-teal-600" />
+                    <span>Tutor Cart</span>
+                  </Link>
+                )}
+
                 {/* Notifications dropdown button */}
                 <div className="relative">
                   <button
@@ -270,12 +282,12 @@ export const Navbar = () => {
                       {role === 'parent' && (
                         <>
                           <Link
-                            to="/parent/requirements"
+                            to="/parent/cart"
                             onClick={() => setUserDropdownOpen(false)}
-                            className="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 hover:bg-slate-50 font-semibold"
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 hover:bg-slate-50 font-bold text-teal-800"
                           >
-                            <FileText className="w-4 h-4 text-slate-400" />
-                            My Tuition Requests
+                            <ShoppingBag className="w-4 h-4 text-teal-600" />
+                            Tutor Cart
                           </Link>
                           <Link
                             to="/parent/bookings"
@@ -286,12 +298,12 @@ export const Navbar = () => {
                             Bookings & Demos
                           </Link>
                           <Link
-                            to="/parent/saved-tutors"
+                            to="/parent/children"
                             onClick={() => setUserDropdownOpen(false)}
                             className="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 hover:bg-slate-50 font-semibold"
                           >
                             <Heart className="w-4 h-4 text-slate-400" />
-                            Saved Tutors
+                            My Children
                           </Link>
                         </>
                       )}
@@ -447,6 +459,15 @@ export const Navbar = () => {
                   >
                     Open Dashboard
                   </Link>
+                  {role === 'parent' && (
+                    <Link
+                      to="/parent/cart"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-3 py-2 rounded-xl text-teal-800 hover:bg-teal-50 font-bold text-xs"
+                    >
+                      Tutor Cart
+                    </Link>
+                  )}
                   {role === 'tutor' && (
                     <Link
                       to="/tutor/cart"

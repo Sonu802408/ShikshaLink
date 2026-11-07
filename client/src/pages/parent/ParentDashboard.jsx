@@ -26,6 +26,8 @@ import { ParentProfileCard } from '../../components/parent/ParentProfileCard';
 import { ParentProfileEditModal } from '../../components/parent/ParentProfileEditModal';
 import { ChildCard } from '../../components/parent/ChildCard';
 import { ChildModal } from '../../components/parent/ChildModal';
+import { TutorCard } from '../../components/tutors/TutorCard';
+import { BookingModal } from '../../components/bookings/BookingModal';
 
 export const ParentDashboard = () => {
   const { user } = useAuth();
@@ -34,11 +36,12 @@ export const ParentDashboard = () => {
   const [parentProfile, setParentProfile] = useState(null);
   const [children, setChildren] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [requirements, setRequirements] = useState([]);
+  const [cartTutors, setCartTutors] = useState([]);
+  const [selectedTutorForBooking, setSelectedTutorForBooking] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Active Tab for Bookings & Cart
-  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'cart' | 'history' | 'payments'
+  const [activeTab, setActiveTab] = useState('cart'); // 'cart' | 'active' | 'history' | 'payments'
 
   // Modal States
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -49,16 +52,16 @@ export const ParentDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [profileRes, bookingsRes, reqRes] = await Promise.all([
+      const [profileRes, bookingsRes, cartRes] = await Promise.all([
         apiRequest('/parents/profile').catch(() => ({ profile: null, children: [] })),
         apiRequest('/bookings/my').catch(() => ({ bookings: [] })),
-        apiRequest('/requirements/my').catch(() => ({ requirements: [] }))
+        apiRequest('/parents/cart').catch(() => ({ tutors: [] }))
       ]);
 
       if (profileRes.profile) setParentProfile(profileRes.profile);
       if (profileRes.children) setChildren(profileRes.children);
       if (bookingsRes.bookings) setBookings(bookingsRes.bookings);
-      if (reqRes.requirements) setRequirements(reqRes.requirements);
+      if (cartRes.tutors) setCartTutors(cartRes.tutors);
     } catch (err) {
       console.error(err);
     } finally {
@@ -351,43 +354,96 @@ export const ParentDashboard = () => {
           </div>
         )}
 
-        {/* Tab 2: Cart & Pending Payments */}
+        {/* Tab 2: Tutor Cart & Pending Checkout */}
         {activeTab === 'cart' && (
-          <div className="space-y-3">
-            {cartBookings.length === 0 ? (
-              <div className="py-10 text-center text-xs text-slate-400">
-                Your tuition booking cart is clear. No pending invoices waiting for payment.
-              </div>
-            ) : (
-              cartBookings.map((b) => (
-                <div
-                  key={b._id}
-                  className="p-4 sm:p-5 rounded-2xl bg-amber-50/60 border border-amber-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs"
+          <div className="space-y-6">
+            {/* Shortlisted Tutors in Cart */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                  <ShoppingBag className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Shortlisted Tutors in Cart ({cartTutors.length})</span>
+                </span>
+                <Link
+                  to="/parent/cart"
+                  className="text-xs font-bold text-teal-700 hover:underline"
                 >
-                  <div className="space-y-1">
-                    <div className="font-extrabold text-slate-900 text-sm">
-                      Tuition Session: {b.subject} ({b.classGrade}) with {b.tutorUser?.name}
-                    </div>
-                    <div className="text-slate-600 flex items-center gap-2">
-                      <span>Total Payable:</span>
-                      <span className="font-black text-slate-900 text-sm">
-                        ₹{b.fee?.totalAmount || b.fee?.agreedAmount || 500}
-                      </span>
-                      <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-2 py-0.5 rounded-full">
-                        Pending Payment
-                      </span>
-                    </div>
-                  </div>
+                  View Full Cart & Recommendations →
+                </Link>
+              </div>
 
+              {cartTutors.length === 0 ? (
+                <div className="p-8 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-300 space-y-2">
+                  <div className="font-bold text-slate-800 text-xs">No tutors currently in your cart</div>
+                  <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                    Explore verified academic teachers and add them to your cart to book 1-on-1 home or online classes.
+                  </p>
                   <Link
-                    to={`/checkout/${b._id}`}
-                    className="px-4 py-2 rounded-xl btn-3d-primary text-xs font-bold flex items-center gap-1.5"
+                    to="/find-tutors"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl btn-3d-primary text-xs font-bold mt-1"
                   >
-                    <CreditCard className="w-3.5 h-3.5" />
-                    <span>Pay Now</span>
+                    <span>Browse Tutors</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
-              ))
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {cartTutors.map((tutor) => (
+                    <TutorCard
+                      key={tutor._id}
+                      tutor={tutor}
+                      isSaved={true}
+                      onSave={async (id) => {
+                        await apiRequest('/parents/cart/toggle', {
+                          method: 'POST',
+                          body: JSON.stringify({ tutorProfileId: id })
+                        });
+                        setCartTutors((prev) => prev.filter((t) => t._id !== id));
+                        showToast('Tutor removed from cart', 'info');
+                      }}
+                      onBook={(t) => setSelectedTutorForBooking(t)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Pending Invoices */}
+            {cartBookings.length > 0 && (
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <span className="font-bold text-slate-800 text-xs uppercase tracking-wider block">
+                  Pending Session Checkouts ({cartBookings.length})
+                </span>
+                {cartBookings.map((b) => (
+                  <div
+                    key={b._id}
+                    className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs"
+                  >
+                    <div className="space-y-0.5">
+                      <div className="font-extrabold text-slate-900 text-sm">
+                        Tuition Session: {b.subject} ({b.classGrade}) with {b.tutorUser?.name}
+                      </div>
+                      <div className="text-slate-600 flex items-center gap-2">
+                        <span>Total Payable:</span>
+                        <span className="font-black text-slate-900 text-sm">
+                          ₹{b.fee?.totalAmount || b.fee?.agreedAmount || 500}
+                        </span>
+                        <span className="text-[10px] text-amber-700 font-bold bg-amber-100 px-2 py-0.5 rounded-full">
+                          Pending Payment
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link
+                      to={`/checkout/${b._id}`}
+                      className="px-4 py-2 rounded-xl btn-3d-primary text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>Pay Now</span>
+                    </Link>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -470,6 +526,19 @@ export const ParentDashboard = () => {
         isSaving={savingChild}
         onSave={handleSaveChild}
       />
+
+      {/* Booking Modal */}
+      {selectedTutorForBooking && (
+        <BookingModal
+          tutor={selectedTutorForBooking}
+          onClose={() => setSelectedTutorForBooking(null)}
+          onBookingSuccess={() => {
+            setSelectedTutorForBooking(null);
+            showToast('Session request sent successfully!', 'success');
+            fetchDashboardData();
+          }}
+        />
+      )}
     </div>
   );
 };

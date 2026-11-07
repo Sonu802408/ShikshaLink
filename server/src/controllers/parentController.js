@@ -2,6 +2,8 @@ import { ParentProfile } from '../models/ParentProfile.js';
 import { ChildProfile } from '../models/ChildProfile.js';
 import { User } from '../models/User.js';
 import { Booking } from '../models/Booking.js';
+import { SavedTutor } from '../models/SavedTutor.js';
+import { TutorProfile } from '../models/TutorProfile.js';
 
 // Get current parent profile with auto-population from user account
 export const getMyParentProfile = async (req, res, next) => {
@@ -295,6 +297,77 @@ export const deleteChild = async (req, res, next) => {
       success: true,
       message: 'Child profile removed successfully.'
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Get Parent's Tutor Cart & Suggested Tutors
+export const getParentCart = async (req, res, next) => {
+  try {
+    const saved = await SavedTutor.find({ parentUser: req.user.id })
+      .populate({
+        path: 'tutorProfile',
+        populate: { path: 'user', select: 'name avatar email phone' }
+      })
+      .sort({ createdAt: -1 });
+
+    const tutors = saved.map((s) => s.tutorProfile).filter(Boolean);
+
+    // If cart has few tutors, also fetch top verified active tutors to recommend for instant booking
+    let recommendedTutors = [];
+    const savedIds = tutors.map((t) => t._id);
+    recommendedTutors = await TutorProfile.find({
+      _id: { $nin: savedIds },
+      isPublished: true,
+      isAcceptingStudents: true,
+      applicationStatus: 'approved'
+    })
+      .populate('user', 'name avatar email phone')
+      .sort({ averageRating: -1, reviewCount: -1 })
+      .limit(6);
+
+    res.json({
+      success: true,
+      tutors,
+      recommendedTutors
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Toggle or remove tutor from Parent's cart
+export const toggleCartTutor = async (req, res, next) => {
+  try {
+    const { tutorProfileId } = req.body;
+    if (!tutorProfileId) {
+      return res.status(400).json({ success: false, message: 'Tutor profile ID is required.' });
+    }
+
+    const existing = await SavedTutor.findOne({
+      parentUser: req.user.id,
+      tutorProfile: tutorProfileId
+    });
+
+    if (existing) {
+      await existing.deleteOne();
+      return res.json({
+        success: true,
+        inCart: false,
+        message: 'Tutor removed from your cart.'
+      });
+    } else {
+      await SavedTutor.create({
+        parentUser: req.user.id,
+        tutorProfile: tutorProfileId
+      });
+      return res.json({
+        success: true,
+        inCart: true,
+        message: 'Tutor added to your cart!'
+      });
+    }
   } catch (err) {
     next(err);
   }

@@ -7,7 +7,9 @@ import {
   getChildById,
   updateChild,
   deleteChild,
-  uploadParentAvatar
+  uploadParentAvatar,
+  getParentCart,
+  toggleCartTutor
 } from '../controllers/parentController.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { uploadAvatar } from '../middleware/upload.js';
@@ -26,5 +28,9 @@ router.get('/children', authorize(ROLES.PARENT), getMyChildren);
 router.get('/children/:id', getChildById);
 router.put('/children/:id', authorize(ROLES.PARENT), updateChild);
 router.delete('/children/:id', authorize(ROLES.PARENT), deleteChild);
+
+// Tutor Cart for Parents
+router.get('/cart', authorize(ROLES.PARENT), getParentCart);
+router.post('/cart/toggle', authorize(ROLES.PARENT), toggleCartTutor);
 
 export default router;
