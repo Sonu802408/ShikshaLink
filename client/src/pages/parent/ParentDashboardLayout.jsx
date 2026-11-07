@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Users,
   CalendarCheck,
-  Heart,
   Star,
   LifeBuoy,
   ShoppingBag
@@ -20,7 +19,6 @@ export const ParentDashboardLayout = () => {
     { to: '/parent/children', label: 'My Children', icon: Users },
     { to: '/parent/cart', label: 'Tutor Cart', icon: ShoppingBag, highlight: true },
     { to: '/parent/bookings', label: 'Bookings & Demos', icon: CalendarCheck },
-    { to: '/parent/saved-tutors', label: 'Saved Tutors', icon: Heart },
     { to: '/parent/reviews', label: 'My Reviews', icon: Star },
     { to: '/parent/support', label: 'Help & Complaints', icon: LifeBuoy }
   ];

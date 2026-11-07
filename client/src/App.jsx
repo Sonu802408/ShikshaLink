@@ -130,7 +130,7 @@ export default function App() {
                     <Route path="requirements" element={<Navigate to="/parent/cart" replace />} />
                     <Route path="requirements/new" element={<Navigate to="/parent/cart" replace />} />
                     <Route path="bookings" element={<ParentBookings />} />
-                    <Route path="saved-tutors" element={<ParentCartPage />} />
+                    <Route path="saved-tutors" element={<Navigate to="/parent/cart" replace />} />
                     <Route path="reviews" element={<ParentReviews />} />
                     <Route path="support" element={<ParentSupport />} />
                   </Route>
