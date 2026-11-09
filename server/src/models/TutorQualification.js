@@ -45,6 +45,10 @@ const tutorQualificationSchema = new Schema(
       type: String,
       default: 'application/pdf'
     },
+    fileData: {
+      type: String,
+      select: false
+    },
     verificationStatus: {
       type: String,
       enum: ['pending', 'verified', 'rejected'],

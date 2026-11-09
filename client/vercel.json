@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/uploads/(.*)",
+      "destination": "https://shikshalink-api.onrender.com/uploads/$1"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "https://shikshalink-api.onrender.com/api/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }

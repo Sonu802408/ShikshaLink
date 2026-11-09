@@ -309,6 +309,7 @@ const tutorProfileSchema = new Schema(
         path: { type: String, required: true },
         originalName: { type: String, default: '' },
         mimeType: { type: String, default: '' },
+        fileData: { type: String, select: false },
         status: {
           type: String,
           enum: ['pending', 'verified', 'rejected'],

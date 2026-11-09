@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const PROD_BACKEND_URL = 'https://shikshalink-api.onrender.com';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? `${PROD_BACKEND_URL}/api` : '/api');
 
 export const getStoredToken = () => {
   return localStorage.getItem('shikshalink_token');
@@ -27,6 +28,9 @@ export const getAvatarUrl = (avatarPath) => {
     const backendHost = API_BASE.replace(/\/api\/?$/, '');
     return `${backendHost}${cleanPath}`;
   }
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `${PROD_BACKEND_URL}${cleanPath}`;
+  }
   return cleanPath;
 };
 
@@ -39,6 +43,9 @@ export const getDocumentUrl = (docIdOrPath) => {
   if (API_BASE && API_BASE.startsWith('http')) {
     const backendHost = API_BASE.replace(/\/api\/?$/, '');
     return `${backendHost}${cleanPath}`;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `${PROD_BACKEND_URL}${cleanPath}`;
   }
   return cleanPath;
 };
