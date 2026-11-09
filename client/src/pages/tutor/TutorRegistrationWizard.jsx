@@ -446,35 +446,41 @@ export const TutorRegistrationWizard = () => {
       return;
     }
 
-    const tempBlob = URL.createObjectURL(file);
-    setPhotoPreview(tempBlob);
-    setUploadingPhoto(true);
+    // Read immediately as Base64 for instant preview & zero-loss persistence
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result;
+      setPhotoPreview(base64Data);
+      setFormData((prev) => ({ ...prev, avatar: base64Data }));
+      formDataRef.current = { ...formDataRef.current, avatar: base64Data };
 
-    const data = new FormData();
-    data.append('avatar', file);
+      setUploadingPhoto(true);
+      const data = new FormData();
+      data.append('avatar', file);
 
-    try {
-      const res = await apiRequest('/tutors/avatar', {
-        method: 'POST',
-        body: data
-      });
-      if (res.success && res.avatarUrl) {
-        setPhotoPreview(res.avatarUrl);
-        setFormData((prev) => ({ ...prev, avatar: res.avatarUrl }));
-        formDataRef.current = { ...formDataRef.current, avatar: res.avatarUrl };
-        // Immediately persist to draft on backend
-        saveDraftToServer({ ...formDataRef.current, avatar: res.avatarUrl });
+      try {
+        const res = await apiRequest('/tutors/avatar', {
+          method: 'POST',
+          body: data
+        });
+        const savedUrl = (res.success && res.avatarUrl) ? res.avatarUrl : base64Data;
+        setPhotoPreview(savedUrl);
+        setFormData((prev) => ({ ...prev, avatar: savedUrl }));
+        formDataRef.current = { ...formDataRef.current, avatar: savedUrl };
+        saveDraftToServer({ ...formDataRef.current, avatar: savedUrl });
         showToast('Profile photo updated successfully!', 'success');
         refreshUser();
+      } catch (err) {
+        console.warn('Avatar server sync note:', err.message);
+        // Retain the base64 preview in form so user never loses their chosen photo
+        saveDraftToServer({ ...formDataRef.current, avatar: base64Data });
+        showToast('Profile photo loaded.', 'success');
+      } finally {
+        setUploadingPhoto(false);
+        if (avatarInputRef.current) avatarInputRef.current.value = '';
       }
-    } catch (err) {
-      showToast(err.message || 'Photo upload failed', 'error');
-      // If upload failed, revert preview to saved avatar
-      setPhotoPreview(formDataRef.current.avatar || user?.avatar || null);
-    } finally {
-      setUploadingPhoto(false);
-      if (avatarInputRef.current) avatarInputRef.current.value = '';
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Document Upload
@@ -836,7 +842,8 @@ export const TutorRegistrationWizard = () => {
                         alt="Tutor"
                         className="absolute inset-0 w-full h-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.fullName || user?.name || 'Tutor')}&background=0D9488&color=fff&size=256&bold=true`;
                         }}
                       />
                     )}
@@ -2161,7 +2168,10 @@ export const TutorRegistrationWizard = () => {
                             src={getAvatarUrl(photoPreview)}
                             alt="Tutor"
                             className="w-full h-full object-cover"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.fullName || user?.name || 'Tutor')}&background=0D9488&color=fff&size=256&bold=true`;
+                            }}
                           />
                         ) : (
                           <span>{formData.fullName?.[0] || user?.name?.[0] || 'T'}</span>

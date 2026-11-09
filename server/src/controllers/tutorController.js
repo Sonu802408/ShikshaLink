@@ -6,6 +6,7 @@ import { TutorProfile } from '../models/TutorProfile.js';
 import { TutorQualification } from '../models/TutorQualification.js';
 import { Review } from '../models/Review.js';
 import { User } from '../models/User.js';
+import { ROLES } from '../config/constants.js';
 import { createNotification } from '../services/notificationService.js';
 import { buildValidPdf } from '../utils/pdfGenerator.js';
 
@@ -394,8 +395,11 @@ export const saveTutorDraft = async (req, res, next) => {
 
     draftFields.forEach((field) => {
       if (data[field] !== undefined) {
-        if (field === 'avatar' && (typeof data.avatar !== 'string' || data.avatar.startsWith('blob:'))) {
-          return;
+        if (field === 'avatar') {
+          // Never wipe an existing avatar with empty string or invalid blob
+          if (!data.avatar || typeof data.avatar !== 'string' || data.avatar.startsWith('blob:') || !data.avatar.trim()) {
+            return;
+          }
         }
         profile[field] = data[field];
       }
@@ -438,9 +442,11 @@ export const saveTutorDraft = async (req, res, next) => {
     if (data.fullName && data.fullName.trim() && data.fullName.trim() !== req.user.name) {
       userUpdates.name = data.fullName.trim();
     }
-    if (data.avatar && typeof data.avatar === 'string' && !data.avatar.startsWith('blob:') && data.avatar !== req.user.avatar) {
+    if (data.avatar && typeof data.avatar === 'string' && !data.avatar.startsWith('blob:') && data.avatar.trim() && data.avatar !== req.user.avatar) {
       profile.avatar = data.avatar;
       userUpdates.avatar = data.avatar;
+    } else if (!profile.avatar && req.user.avatar) {
+      profile.avatar = req.user.avatar;
     }
 
     const savePromises = [profile.save()];
@@ -476,12 +482,15 @@ export const saveTutorDraft = async (req, res, next) => {
 // Complete and Submit Tutor Profile
 export const submitTutorProfile = async (req, res, next) => {
   try {
+    const data = req.body;
+    if (data.termsAccepted === false) {
+      return res.status(400).json({ success: false, message: 'You must accept the terms and conditions before submitting your tutor application.' });
+    }
+
     let profile = await TutorProfile.findOne({ user: req.user.id });
     if (!profile) {
       profile = new TutorProfile({ user: req.user.id });
     }
-
-    const data = req.body;
 
     const updateFields = [
       'fullName', 'dateOfBirth', 'gender', 'whatsappNumber', 'pincode', 'area', 'city', 'primaryLocality',
@@ -586,9 +595,9 @@ export const submitTutorProfile = async (req, res, next) => {
     profile.isAcceptingStudents = false;
     profile.termsAccepted = true;
 
-    if (data.avatar && typeof data.avatar === 'string' && !data.avatar.startsWith('blob:')) {
+    if (data.avatar && typeof data.avatar === 'string' && !data.avatar.startsWith('blob:') && data.avatar.trim()) {
       profile.avatar = data.avatar;
-    } else if (user?.avatar && !user.avatar.startsWith('blob:')) {
+    } else if (user?.avatar && !user.avatar.startsWith('blob:') && user.avatar.trim()) {
       profile.avatar = user.avatar;
     }
     profile.submittedAt = new Date();
@@ -606,10 +615,13 @@ export const submitTutorProfile = async (req, res, next) => {
     });
 
     const userUpdates = {};
+    if (user && user.role !== ROLES.ADMIN && user.role !== ROLES.TUTOR) {
+      userUpdates.role = ROLES.TUTOR;
+    }
     if (data.fullName && data.fullName.trim() && data.fullName.trim() !== req.user.name) {
       userUpdates.name = data.fullName.trim();
     }
-    if (profile.avatar && typeof profile.avatar === 'string' && !profile.avatar.startsWith('blob:') && profile.avatar !== user?.avatar) {
+    if (profile.avatar && typeof profile.avatar === 'string' && !profile.avatar.startsWith('blob:') && profile.avatar.trim() && profile.avatar !== user?.avatar) {
       userUpdates.avatar = profile.avatar;
     }
 
@@ -914,15 +926,24 @@ export const updateMyTutorProfile = async (req, res, next) => {
 
     // Handle avatar upload if included in multipart request or payload
     if (req.file) {
-      const avatarUrl = `/uploads/public/${req.file.filename}`;
-      await User.findByIdAndUpdate(req.user.id, { avatar: avatarUrl });
-      profile.avatar = avatarUrl;
-    } else if (req.body.avatar) {
+      let effectiveAvatar = `/uploads/public/${req.file.filename}`;
+      try {
+        if (req.file.path && fs.existsSync(req.file.path)) {
+          const fileBuffer = fs.readFileSync(req.file.path);
+          const mimeType = req.file.mimetype || 'image/jpeg';
+          effectiveAvatar = `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+        }
+      } catch (encodeErr) {
+        console.warn('Avatar base64 encoding error:', encodeErr.message);
+      }
+      await User.findByIdAndUpdate(req.user.id, { avatar: effectiveAvatar });
+      profile.avatar = effectiveAvatar;
+    } else if (req.body.avatar && typeof req.body.avatar === 'string' && req.body.avatar.trim() && !req.body.avatar.startsWith('blob:')) {
       profile.avatar = req.body.avatar;
       await User.findByIdAndUpdate(req.user.id, { avatar: req.body.avatar });
     } else {
       const currentUser = await User.findById(req.user.id);
-      if (currentUser?.avatar) {
+      if (currentUser?.avatar && !profile.avatar) {
         profile.avatar = currentUser.avatar;
       }
     }
@@ -947,19 +968,43 @@ export const uploadTutorAvatar = async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'Please select an image file to upload.' });
     }
-    const avatarUrl = `/uploads/public/${req.file.filename}`;
-    const [user, profile] = await Promise.all([
-      User.findByIdAndUpdate(req.user.id, { avatar: avatarUrl }, { new: true }),
-      TutorProfile.findOneAndUpdate(
-        { user: req.user.id },
-        { avatar: avatarUrl },
-        { new: true }
-      )
-    ]);
+
+    let effectiveAvatar = `/uploads/public/${req.file.filename}`;
+    try {
+      if (req.file.path && fs.existsSync(req.file.path)) {
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const mimeType = req.file.mimetype || 'image/jpeg';
+        effectiveAvatar = `data:${mimeType};base64,${fileBuffer.toString('base64')}`;
+      }
+    } catch (encodeErr) {
+      console.warn('Avatar direct upload base64 encoding error:', encodeErr.message);
+    }
+
+    // Ensure TutorProfile exists or is upserted
+    let profile = await TutorProfile.findOne({ user: req.user.id });
+    if (!profile) {
+      profile = await TutorProfile.create({
+        user: req.user.id,
+        fullName: req.user.name || '',
+        avatar: effectiveAvatar,
+        profileStatus: 'draft',
+        registrationStep: 1
+      });
+    } else {
+      profile.avatar = effectiveAvatar;
+      await profile.save();
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { avatar: effectiveAvatar },
+      { new: true }
+    );
+
     res.json({
       success: true,
       message: 'Profile photo uploaded successfully.',
-      avatarUrl,
+      avatarUrl: effectiveAvatar,
       user,
       profile
     });

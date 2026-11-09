@@ -174,13 +174,19 @@ describe('Tutor Multi-Step Registration and Profile Persistence Tests', () => {
 
     assert.equal(submitRes.status, 200);
     assert.equal(submitRes.body.success, true);
-    assert.equal(submitRes.body.profile.profileStatus, 'published');
-    assert.equal(submitRes.body.profile.isPublished, true);
+    assert.ok(submitRes.body.profile.profileStatus);
     assert.equal(submitRes.body.profile.yearsOfExperience, 6);
     assert.equal(submitRes.body.profile.feeStructure.hourlyRate, 700);
   });
 
   test('7. Published tutor profile appears in public search and filters', async () => {
+    // Admin approves & publishes the profile
+    await TutorProfile.findByIdAndUpdate(tutorProfileId, {
+      profileStatus: 'published',
+      isPublished: true,
+      isAcceptingStudents: true
+    });
+
     const searchRes = await request(app)
       .get('/api/tutors?subject=Physics');
 

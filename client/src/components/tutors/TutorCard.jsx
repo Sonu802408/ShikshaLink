@@ -75,7 +75,8 @@ export const TutorCard = ({
                   alt={user.name || tutor.fullName || 'Tutor photo'}
                   className="absolute inset-0 w-full h-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || tutor.fullName || 'Tutor')}&background=0D9488&color=fff&size=256&bold=true`;
                   }}
                 />
               )}
