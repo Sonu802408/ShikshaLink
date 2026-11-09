@@ -16,7 +16,8 @@ import {
   GraduationCap,
   DollarSign,
   Layers,
-  Sparkles
+  Sparkles,
+  RotateCcw
 } from 'lucide-react';
 import { apiRequest, getAvatarUrl, getDocumentUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -463,6 +464,14 @@ export const AdminVerificationQueue = () => {
                       >
                         <CheckCircle2 className="w-4 h-4" />
                         Approve Document
+                      </button>
+                      <button
+                        onClick={() => handleOpenDecision(item, 'needs_reupload')}
+                        className="px-3.5 py-2 rounded-xl border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 font-bold flex items-center gap-1.5 cursor-pointer"
+                        title="Ask tutor to re-upload clear document"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Ask Re-upload
                       </button>
                       <button
                         onClick={() => handleOpenDecision(item, 'rejected')}

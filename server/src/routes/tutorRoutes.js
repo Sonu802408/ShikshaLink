@@ -10,6 +10,7 @@ import {
   saveTutorDraft,
   submitTutorProfile,
   uploadTutorDocument,
+  deleteTutorDocument,
   updateAvailability,
   uploadQualification,
   deleteQualification,
@@ -35,6 +36,7 @@ router.put('/profile/me', protect, authorize(ROLES.TUTOR, ROLES.ADMIN), uploadAv
 router.put('/draft', protect, authorize(ROLES.TUTOR, ROLES.ADMIN), saveTutorDraft);
 router.post('/submit', protect, authorize(ROLES.TUTOR, ROLES.ADMIN), submitTutorProfile);
 router.post('/upload-document', protect, authorize(ROLES.TUTOR, ROLES.ADMIN), uploadDocument.single('document'), uploadTutorDocument);
+router.delete('/documents/:id', protect, authorize(ROLES.TUTOR, ROLES.ADMIN), deleteTutorDocument);
 router.post('/avatar', protect, authorize(ROLES.TUTOR, ROLES.ADMIN), uploadAvatar.single('avatar'), uploadTutorAvatar);
 router.put('/availability/me', protect, authorize(ROLES.TUTOR, ROLES.ADMIN), updateAvailability);
 

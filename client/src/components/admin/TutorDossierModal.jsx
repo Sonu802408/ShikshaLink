@@ -20,9 +20,10 @@ import {
   ExternalLink,
   X,
   AlertCircle,
-  Trash2
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
-import { getAvatarUrl, getDocumentUrl } from '../../services/api';
+import { getAvatarUrl, getDocumentUrl, apiRequest } from '../../services/api';
 
 export const TutorDossierModal = ({
   tutor,
@@ -36,10 +37,34 @@ export const TutorDossierModal = ({
 
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
+  const [docList, setDocList] = useState(tutor.verificationDocuments || []);
+  const [activeReuploadDocId, setActiveReuploadDocId] = useState(null);
+  const [reuploadNote, setReuploadNote] = useState('Document is unclear or blurry. Please re-upload a clear scanned copy.');
+  const [updatingDocId, setUpdatingDocId] = useState(null);
+
+  const handleDocDecision = async (docId, status, notes = '') => {
+    setUpdatingDocId(docId);
+    try {
+      const res = await apiRequest(`/admin/tutors/${tutor._id}/documents/${docId}/decide`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status, adminNotes: notes })
+      });
+      if (res.success) {
+        setDocList((prev) =>
+          prev.map((d) => (d._id === docId ? { ...d, status, adminNotes: notes } : d))
+        );
+        setActiveReuploadDocId(null);
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to update document status');
+    } finally {
+      setUpdatingDocId(null);
+    }
+  };
 
   const u = tutor.user || {};
   const fee = tutor.feeStructure || {};
-  const docs = tutor.verificationDocuments || [];
+  const docs = docList;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-slate-900/70 backdrop-blur-xs animate-in fade-in duration-150">
@@ -362,29 +387,115 @@ export const TutorDossierModal = ({
 
           {/* SECTION 8: Confidential Uploaded Documents */}
           {docs.length > 0 && (
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
-              <div className="flex items-center gap-1.5 font-black text-slate-900 uppercase tracking-wider text-[11px]">
-                <ShieldCheck className="w-4 h-4 text-teal-600" />
-                <span>8. Confidential Uploaded Documents ({docs.length})</span>
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-black text-slate-900 uppercase tracking-wider text-[11px]">
+                  <ShieldCheck className="w-4 h-4 text-teal-600" />
+                  <span>8. Confidential Uploaded Documents ({docs.length})</span>
+                </div>
+                <span className="text-[10px] text-slate-500 font-medium">Click "Ask Re-upload" if any document is unclear</span>
               </div>
               <div className="divide-y divide-slate-200 border border-slate-200 rounded-xl overflow-hidden bg-white">
                 {docs.map((doc, idx) => (
-                  <div key={idx} className="p-3 flex items-center justify-between gap-3 text-xs">
-                    <div>
-                      <div className="font-bold text-slate-800">{doc.title || doc.originalName || 'Document'}</div>
-                      <span className="text-slate-400 capitalize text-[10px]">
-                        Type: <strong>{doc.docType}</strong> • Status: {doc.status} • Uploaded: {new Date(doc.uploadedAt || Date.now()).toLocaleDateString()}
-                      </span>
+                  <div key={doc._id || idx} className="p-3.5 space-y-2.5 text-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-800 text-xs">{doc.title || doc.originalName || 'Document'}</span>
+                          <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${
+                            doc.status === 'verified'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : doc.status === 'needs_reupload'
+                              ? 'bg-amber-50 text-amber-800 border-amber-200 animate-pulse'
+                              : doc.status === 'rejected'
+                              ? 'bg-rose-50 text-rose-800 border-rose-200'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}>
+                            {doc.status === 'needs_reupload' ? '⚠️ Re-upload Requested' : doc.status}
+                          </span>
+                        </div>
+                        <span className="text-slate-400 capitalize text-[10px] block mt-0.5">
+                          Type: <strong>{doc.docType}</strong> • Uploaded: {new Date(doc.uploadedAt || Date.now()).toLocaleDateString()}
+                          {doc.adminNotes && <span className="text-amber-800 font-semibold block mt-0.5">Admin Note: {doc.adminNotes}</span>}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        <a
+                          href={getDocumentUrl(doc._id || doc.path)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer text-[11px]"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>Inspect Document</span>
+                        </a>
+
+                        {doc.status !== 'verified' && (
+                          <button
+                            type="button"
+                            disabled={updatingDocId === doc._id}
+                            onClick={() => handleDocDecision(doc._id, 'verified', 'Approved by administrator')}
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors shadow-2xs disabled:opacity-50"
+                            title="Mark document verified"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Verify</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          disabled={updatingDocId === doc._id}
+                          onClick={() => {
+                            if (activeReuploadDocId === doc._id) {
+                              setActiveReuploadDocId(null);
+                            } else {
+                              setActiveReuploadDocId(doc._id);
+                              setReuploadNote('Document is unclear or blurry. Please re-upload a clear scanned copy.');
+                            }
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                          title="Ask tutor to re-upload clear document"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Ask Re-upload</span>
+                        </button>
+                      </div>
                     </div>
-                    <a
-                      href={getDocumentUrl(doc._id || doc.path)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer text-[11px]"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span>Inspect Document</span>
-                    </a>
+
+                    {/* Inline Re-upload Reason Prompt */}
+                    {activeReuploadDocId === doc._id && (
+                      <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2 animate-in fade-in duration-150">
+                        <label className="block text-[11px] font-bold text-amber-900">
+                          Why is re-upload needed? (Tutor will receive this instruction)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={reuploadNote}
+                            onChange={(e) => setReuploadNote(e.target.value)}
+                            placeholder="e.g. Document image is blurry / cut off, please upload clear PDF"
+                            className="w-full px-3 py-1.5 text-xs bg-white border border-amber-300 rounded-lg text-slate-800"
+                          />
+                          <button
+                            type="button"
+                            disabled={updatingDocId === doc._id}
+                            onClick={() => handleDocDecision(doc._id, 'needs_reupload', reuploadNote)}
+                            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shrink-0 cursor-pointer shadow-xs disabled:opacity-50"
+                          >
+                            Send Request
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveReuploadDocId(null)}
+                            className="px-2 py-1.5 text-slate-500 hover:text-slate-700 text-xs cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

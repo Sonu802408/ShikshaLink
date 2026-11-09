@@ -21,7 +21,8 @@ import {
   addExistingUserAsTutor,
   inviteNewTutor,
   permanentlyDeleteTutorApplication,
-  deleteUser
+  deleteUser,
+  decideTutorDocument
 } from '../controllers/adminController.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { ROLES } from '../config/constants.js';
@@ -33,6 +34,7 @@ router.use(protect, authorize(ROLES.ADMIN));
 router.get('/metrics', getAdminMetrics);
 router.get('/verification-queue', getVerificationQueue);
 router.patch('/qualifications/:id/decide', decideQualification);
+router.patch('/tutors/:tutorId/documents/:docId/decide', decideTutorDocument);
 router.patch('/tutors/:id/badges', updateTutorBadges);
 
 // Full Tutor Management

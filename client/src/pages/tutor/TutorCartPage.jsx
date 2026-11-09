@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FileCheck,
@@ -22,9 +22,12 @@ import {
   Sparkles,
   ArrowRight,
   Eye,
-  Calendar
+  Calendar,
+  Upload,
+  Trash2,
+  Plus
 } from 'lucide-react';
-import { apiRequest, getAvatarUrl } from '../../services/api';
+import { apiRequest, getAvatarUrl, getDocumentUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -33,6 +36,7 @@ export const TutorCartPage = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [cartData, setCartData] = useState(null);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -40,6 +44,11 @@ export const TutorCartPage = () => {
   const [withdrawing, setWithdrawing] = useState(false);
   const [reactivating, setReactivating] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // Document upload / replacement states
+  const [activeReplaceDocId, setActiveReplaceDocId] = useState(null);
+  const [activeDocType, setActiveDocType] = useState('qualification');
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   const fetchCart = async () => {
     setLoading(true);
@@ -97,6 +106,71 @@ export const TutorCartPage = () => {
     }
   };
 
+  // Document Upload & Replacement Handlers
+  const handleTriggerUpload = (docId = null, docType = 'qualification') => {
+    setActiveReplaceDocId(docId);
+    setActiveDocType(docType);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('File size must be under 10MB.', 'error');
+      return;
+    }
+
+    setUploadingDoc(true);
+    const data = new FormData();
+    data.append('document', file);
+    data.append('docType', activeDocType || 'qualification');
+    data.append('title', file.name.replace(/\.[^/.]+$/, ''));
+    if (activeReplaceDocId) {
+      data.append('replaceDocId', activeReplaceDocId);
+    }
+
+    try {
+      const res = await apiRequest('/tutors/upload-document', {
+        method: 'POST',
+        body: data
+      });
+      if (res.success) {
+        showToast(
+          activeReplaceDocId
+            ? `✓ Clear copy of ${file.name} uploaded! Submitted for Admin verification.`
+            : `✓ ${file.name} uploaded securely!`,
+          'success'
+        );
+        fetchCart();
+      }
+    } catch (err) {
+      showToast(err.message || 'Upload failed', 'error');
+    } finally {
+      setUploadingDoc(false);
+      setActiveReplaceDocId(null);
+    }
+  };
+
+  const handleDeleteDocument = async (docId, docTitle) => {
+    if (!window.confirm(`Are you sure you want to remove "${docTitle || 'this document'}" from your application?`)) return;
+    try {
+      const res = await apiRequest(`/tutors/documents/${docId}`, {
+        method: 'DELETE'
+      });
+      if (res.success) {
+        showToast('Document removed from application.', 'success');
+        fetchCart();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to remove document', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 space-y-4">
@@ -109,9 +183,20 @@ export const TutorCartPage = () => {
   const app = cartData?.application;
   const status = app?.applicationStatus || 'draft';
   const isInCart = cartData?.isInCart;
+  const docs = app?.verificationDocuments || [];
+  const needsReuploadDocs = docs.filter((d) => d.status === 'needs_reupload');
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 py-6 px-4 sm:px-6">
+      {/* Hidden File Input for Direct In-Cart Upload / Re-upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        className="hidden"
+        accept=".pdf,.jpg,.jpeg,.png,.webp"
+      />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-sm">
         <div className="space-y-1">
@@ -163,6 +248,50 @@ export const TutorCartPage = () => {
       ) : (
         /* APPLICATION CARD */
         <div className="space-y-6">
+          {/* URGENT ALERT: RE-UPLOAD REQUESTED BY ADMIN */}
+          {needsReuploadDocs.length > 0 && (
+            <div className="p-5 rounded-3xl bg-amber-50 border-2 border-amber-300 shadow-sm space-y-3 animate-in fade-in">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-200 text-amber-800 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div className="space-y-1 flex-1">
+                  <h3 className="font-black text-amber-950 text-sm">
+                    Action Required: Document Re-upload Requested by Administrator
+                  </h3>
+                  <p className="text-xs text-amber-900 leading-relaxed">
+                    The administrator reviewed your application and requested a clearer copy for {needsReuploadDocs.length} document(s). Please re-upload clear scanned copies so your profile can be approved.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                {needsReuploadDocs.map((nd, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3.5 bg-white rounded-2xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                  >
+                    <div>
+                      <div className="font-bold text-slate-900">{nd.title || nd.originalName} ({nd.docType})</div>
+                      <div className="text-[11px] text-amber-900 font-medium mt-0.5">
+                        <strong>Reason / Note:</strong> {nd.adminNotes || 'Document photo is unclear or blurry. Please upload a clear PDF or photo.'}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerUpload(nd._id, nd.docType)}
+                      disabled={uploadingDoc}
+                      className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer disabled:opacity-50"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{uploadingDoc && activeReplaceDocId === nd._id ? 'Uploading...' : 'Re-upload Clear File'}</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Status Alert Banner */}
           {status === 'withdrawn' ? (
             <div className="p-4 rounded-2xl bg-slate-100 border border-slate-300 flex items-center justify-between gap-4">
@@ -279,10 +408,20 @@ export const TutorCartPage = () => {
             {/* DETAILS GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
               {/* 1. Education */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
-                  <GraduationCap className="w-4 h-4 text-teal-600" />
-                  <span>Qualification</span>
+              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5 relative group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                    <GraduationCap className="w-4 h-4 text-teal-600" />
+                    <span>Qualification</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/tutor/register?step=4')}
+                    className="text-[11px] font-bold text-teal-700 hover:text-teal-900 cursor-pointer flex items-center gap-0.5"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
                 </div>
                 <div className="font-bold text-slate-800">
                   {app.highestQualification || app.degreeCourseName || 'Not specified'}
@@ -293,10 +432,20 @@ export const TutorCartPage = () => {
               </div>
 
               {/* 2. Teaching Experience */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
-                  <BookOpen className="w-4 h-4 text-teal-600" />
-                  <span>Experience</span>
+              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5 relative group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                    <BookOpen className="w-4 h-4 text-teal-600" />
+                    <span>Experience</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/tutor/register?step=4')}
+                    className="text-[11px] font-bold text-teal-700 hover:text-teal-900 cursor-pointer flex items-center gap-0.5"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
                 </div>
                 <div className="font-bold text-slate-800">
                   {app.experienceYears !== undefined ? `${app.experienceYears} Yrs` : `${app.yearsOfExperience || 0} Yrs`}
@@ -308,10 +457,20 @@ export const TutorCartPage = () => {
               </div>
 
               {/* 3. Hourly & Monthly Fees */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
-                  <DollarSign className="w-4 h-4 text-teal-600" />
-                  <span>Fee Structure</span>
+              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5 relative group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                    <DollarSign className="w-4 h-4 text-teal-600" />
+                    <span>Fee Structure</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/tutor/register?step=6')}
+                    className="text-[11px] font-bold text-teal-700 hover:text-teal-900 cursor-pointer flex items-center gap-0.5"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
                 </div>
                 <div className="font-black text-teal-800 text-sm">
                   ₹{app.hourlyFee || app.feeStructure?.hourlyRate || 500} / hour
@@ -326,10 +485,20 @@ export const TutorCartPage = () => {
               </div>
 
               {/* 4. Classes Taught */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
-                  <Layers className="w-4 h-4 text-teal-600" />
-                  <span>Classes</span>
+              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5 relative group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                    <Layers className="w-4 h-4 text-teal-600" />
+                    <span>Classes</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/tutor/register?step=3')}
+                    className="text-[11px] font-bold text-teal-700 hover:text-teal-900 cursor-pointer flex items-center gap-0.5"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
                 </div>
                 <div className="font-semibold text-slate-800 flex flex-wrap gap-1">
                   {(app.schoolClassGroups?.length ? app.schoolClassGroups : app.classes || []).map((c) => (
@@ -342,10 +511,20 @@ export const TutorCartPage = () => {
               </div>
 
               {/* 5. Subjects */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
-                  <Sparkles className="w-4 h-4 text-teal-600" />
-                  <span>Subjects</span>
+              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5 relative group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                    <Sparkles className="w-4 h-4 text-teal-600" />
+                    <span>Subjects</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/tutor/register?step=5')}
+                    className="text-[11px] font-bold text-teal-700 hover:text-teal-900 cursor-pointer flex items-center gap-0.5"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
                 </div>
                 <div className="font-semibold text-slate-800 flex flex-wrap gap-1">
                   {(app.subjects || []).slice(0, 4).map((s) => (
@@ -363,10 +542,20 @@ export const TutorCartPage = () => {
               </div>
 
               {/* 6. Teaching Modes */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5">
-                <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
-                  <Clock className="w-4 h-4 text-teal-600" />
-                  <span>Teaching Modes</span>
+              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-1.5 relative group">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                    <Clock className="w-4 h-4 text-teal-600" />
+                    <span>Teaching Modes</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/tutor/register?step=6')}
+                    className="text-[11px] font-bold text-teal-700 hover:text-teal-900 cursor-pointer flex items-center gap-0.5"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
                 </div>
                 <div className="font-semibold text-slate-800 flex flex-wrap gap-1">
                   {(app.teachingModePreferences?.length ? app.teachingModePreferences : app.teachingModes || []).map((m) => (
@@ -376,6 +565,123 @@ export const TutorCartPage = () => {
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* DEDICATED SECTION 7: UPLOADED DOCUMENTS & RE-UPLOAD MANAGEMENT */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-slate-50/80 border border-slate-200/90 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-teal-600" />
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                      Verification Documents & Status ({docs.length})
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Verified certificates give you the "Degree Verified" badge and higher parent inquiries.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerUpload(null, 'qualification')}
+                    disabled={uploadingDoc}
+                    className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors disabled:opacity-50"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{uploadingDoc && !activeReplaceDocId ? 'Uploading...' : 'Upload Document'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/tutor/register?step=8')}
+                    className="px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Edit3 className="w-3 h-3 text-slate-400" />
+                    <span>Open in Wizard</span>
+                  </button>
+                </div>
+              </div>
+
+              {docs.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
+                  No documents uploaded yet. Click "Upload Document" to attach your degree or ID proof for admin verification.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-2xl overflow-hidden bg-white">
+                  {docs.map((doc, idx) => (
+                    <div key={doc._id || idx} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/50 transition-colors">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-slate-900 text-xs">{doc.title || doc.originalName || 'Document'}</span>
+                          <span
+                            className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${
+                              doc.status === 'verified'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : doc.status === 'needs_reupload'
+                                ? 'bg-amber-100 text-amber-900 border-amber-300 font-black animate-pulse'
+                                : doc.status === 'rejected'
+                                ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                : 'bg-slate-100 text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            {doc.status === 'needs_reupload' ? '⚠️ Re-upload Required' : doc.status === 'verified' ? '✓ Verified' : 'Under Review'}
+                          </span>
+                        </div>
+
+                        <div className="text-[11px] text-slate-500">
+                          Category: <strong className="capitalize">{doc.docType}</strong> • Uploaded: {new Date(doc.uploadedAt || Date.now()).toLocaleDateString()}
+                        </div>
+
+                        {doc.adminNotes && (
+                          <div className="text-[11px] font-medium text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200 block">
+                            <strong>Admin Note:</strong> {doc.adminNotes}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+                        <a
+                          href={getDocumentUrl(doc._id || doc.path)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Inspect File</span>
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => handleTriggerUpload(doc._id, doc.docType)}
+                          disabled={uploadingDoc}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs ${
+                            doc.status === 'needs_reupload'
+                              ? 'bg-amber-600 hover:bg-amber-700 text-white font-black'
+                              : 'border border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                          title="Re-upload or replace this document"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>{uploadingDoc && activeReplaceDocId === doc._id ? 'Uploading...' : 'Re-upload / Replace'}</span>
+                        </button>
+
+                        {doc.status !== 'verified' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteDocument(doc._id, doc.title || doc.originalName)}
+                            className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors cursor-pointer"
+                            title="Remove document"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* ACTION BUTTONS (VIEW DETAILS, EDIT, EXIT) */}

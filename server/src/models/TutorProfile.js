@@ -312,7 +312,7 @@ const tutorProfileSchema = new Schema(
         fileData: { type: String, select: false },
         status: {
           type: String,
-          enum: ['pending', 'verified', 'rejected'],
+          enum: ['pending', 'verified', 'rejected', 'needs_reupload'],
           default: 'pending'
         },
         adminNotes: { type: String, default: '' },

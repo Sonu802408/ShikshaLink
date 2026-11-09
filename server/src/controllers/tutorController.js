@@ -678,7 +678,7 @@ export const uploadTutorDocument = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please select a document file to upload.' });
     }
 
-    const { docType = 'other', title = '' } = req.body;
+    const { docType = 'other', title = '', replaceDocId = '' } = req.body;
     let profile = await TutorProfile.findOne({ user: req.user.id });
     if (!profile) {
       profile = new TutorProfile({ user: req.user.id, profileStatus: 'draft' });
@@ -697,38 +697,75 @@ export const uploadTutorDocument = async (req, res, next) => {
       }
     }
 
-    const newDoc = {
-      docType,
-      title: title || req.file.originalname,
-      path: req.file.filename,
-      originalName: req.file.originalname,
-      mimeType: req.file.mimetype,
-      fileData: fileBase64,
-      status: 'pending',
-      uploadedAt: new Date()
-    };
+    const saveOps = [];
+    let savedDoc = null;
 
-    profile.verificationDocuments.push(newDoc);
+    // Check if replacing an existing document (e.g. re-uploading an unclear document)
+    let existingDoc = null;
+    if (replaceDocId) {
+      existingDoc = profile.verificationDocuments.id(replaceDocId);
+    }
 
-    const saveOps = [profile.save()];
+    if (existingDoc) {
+      const oldDocPath = existingDoc.path;
+      existingDoc.path = req.file.filename;
+      existingDoc.originalName = req.file.originalname;
+      existingDoc.mimeType = req.file.mimetype;
+      existingDoc.fileData = fileBase64;
+      existingDoc.status = 'pending'; // Reset from needs_reupload to pending
+      existingDoc.adminNotes = '';
+      existingDoc.uploadedAt = new Date();
+      if (title) existingDoc.title = title;
+      if (docType) existingDoc.docType = docType;
+      savedDoc = existingDoc;
 
-    // If it is a qualification certificate, also sync to TutorQualification model for admin queue
-    if (docType === 'qualification') {
-      saveOps.push(
-        TutorQualification.create({
-          tutor: profile._id,
-          tutorUser: req.user.id,
-          degree: title || profile.highestQualification || 'Degree Certificate',
-          institution: profile.collegeUniversity || 'University / Board',
-          fieldOfStudy: profile.degreeCourseName || '',
-          passingYear: profile.passingYear || new Date().getFullYear(),
-          documentPath: req.file.filename,
-          documentOriginalName: req.file.originalname,
-          documentMimeType: req.file.mimetype,
-          fileData: fileBase64,
-          verificationStatus: 'pending'
-        })
-      );
+      // Sync matching TutorQualification if any
+      const matchingQual = await TutorQualification.findOne({
+        tutor: profile._id,
+        $or: [{ documentPath: oldDocPath }, { degree: existingDoc.title }]
+      });
+      if (matchingQual) {
+        matchingQual.documentPath = req.file.filename;
+        matchingQual.documentOriginalName = req.file.originalname;
+        matchingQual.documentMimeType = req.file.mimetype;
+        matchingQual.fileData = fileBase64;
+        matchingQual.verificationStatus = 'pending';
+        matchingQual.adminNotes = '';
+        saveOps.push(matchingQual.save());
+      }
+    } else {
+      const newDoc = {
+        docType,
+        title: title || req.file.originalname,
+        path: req.file.filename,
+        originalName: req.file.originalname,
+        mimeType: req.file.mimetype,
+        fileData: fileBase64,
+        status: 'pending',
+        uploadedAt: new Date()
+      };
+
+      profile.verificationDocuments.push(newDoc);
+      savedDoc = newDoc;
+
+      // If it is a qualification certificate, also sync to TutorQualification model for admin queue
+      if (docType === 'qualification') {
+        saveOps.push(
+          TutorQualification.create({
+            tutor: profile._id,
+            tutorUser: req.user.id,
+            degree: title || profile.highestQualification || 'Degree Certificate',
+            institution: profile.collegeUniversity || 'University / Board',
+            fieldOfStudy: profile.degreeCourseName || '',
+            passingYear: profile.passingYear || new Date().getFullYear(),
+            documentPath: req.file.filename,
+            documentOriginalName: req.file.originalname,
+            documentMimeType: req.file.mimetype,
+            fileData: fileBase64,
+            verificationStatus: 'pending'
+          })
+        );
+      }
     }
 
     if (docType === 'resume') {
@@ -741,12 +778,55 @@ export const uploadTutorDocument = async (req, res, next) => {
       };
     }
 
+    saveOps.push(profile.save());
     await Promise.all(saveOps);
 
     res.status(201).json({
       success: true,
-      message: `${docType.charAt(0).toUpperCase() + docType.slice(1)} document uploaded securely.`,
-      document: newDoc,
+      message: `${docType.charAt(0).toUpperCase() + docType.slice(1)} document ${replaceDocId ? 're-uploaded' : 'uploaded'} securely.`,
+      document: savedDoc,
+      verificationDocuments: profile.verificationDocuments
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Delete a document from TutorProfile.verificationDocuments
+export const deleteTutorDocument = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    let profile = await TutorProfile.findOne({ user: req.user.id });
+    if (!profile && req.user.role === 'admin') {
+      profile = await TutorProfile.findOne({ 'verificationDocuments._id': id });
+    }
+    if (!profile) {
+      return res.status(404).json({ success: false, message: 'Tutor profile not found.' });
+    }
+
+    const doc = profile.verificationDocuments.id(id);
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Document not found.' });
+    }
+
+    const docPath = doc.path;
+    profile.verificationDocuments.pull(id);
+    await profile.save();
+
+    // Clean up matching TutorQualification
+    await TutorQualification.deleteMany({ tutor: profile._id, documentPath: docPath });
+
+    // Try deleting physical file
+    try {
+      const p = path.join(__dirname, '../../uploads/private', path.basename(docPath));
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    } catch (e) {
+      console.warn('Could not unlink document file:', e.message);
+    }
+
+    res.json({
+      success: true,
+      message: 'Document removed successfully.',
       verificationDocuments: profile.verificationDocuments
     });
   } catch (err) {

@@ -119,8 +119,8 @@ export const getVerificationQueue = async (req, res, next) => {
 export const decideQualification = async (req, res, next) => {
   try {
     const { status, adminNotes } = req.body;
-    if (!['verified', 'rejected'].includes(status)) {
-      return res.status(400).json({ success: false, message: 'Status must be verified or rejected.' });
+    if (!['verified', 'rejected', 'needs_reupload'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Status must be verified, rejected, or needs_reupload.' });
     }
 
     const qualification = await TutorQualification.findById(req.params.id);
@@ -140,7 +140,7 @@ export const decideQualification = async (req, res, next) => {
       if (status === 'verified') {
         tutorProfile.verificationBadges.qualificationVerified = true;
       } else {
-        // If rejected, check if there are any other verified qualifications
+        // If rejected or needs_reupload, check if there are any other verified qualifications
         const remainingVerified = await TutorQualification.countDocuments({
           tutor: tutorProfile._id,
           verificationStatus: 'verified'
@@ -162,16 +162,108 @@ export const decideQualification = async (req, res, next) => {
     // Notify tutor
     createNotification({
       recipient: qualification.tutorUser,
-      title: `Qualification Document ${status === 'verified' ? 'Approved' : 'Needs Attention'}`,
-      message: `Your document for '${qualification.degree}' has been ${status}. ${adminNotes ? 'Note: ' + adminNotes : ''}`,
+      title: status === 'needs_reupload'
+        ? '⚠️ Document Re-upload Requested'
+        : `Qualification Document ${status === 'verified' ? 'Approved' : 'Needs Attention'}`,
+      message: status === 'needs_reupload'
+        ? `Admin requested a clear re-upload for "${qualification.degree}". Reason: ${adminNotes || 'Document is unclear or incomplete'}. You can re-upload it directly from your Tutor Cart.`
+        : `Your document for '${qualification.degree}' has been ${status}. ${adminNotes ? 'Note: ' + adminNotes : ''}`,
       type: 'verification',
-      link: '/tutor/qualifications'
+      link: '/tutor/cart'
     });
 
     res.json({
       success: true,
       message: `Qualification has been marked as ${status}.`,
       qualification
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Review & Decide on any document in TutorProfile.verificationDocuments (e.g. Identity, Qualification, Resume)
+export const decideTutorDocument = async (req, res, next) => {
+  try {
+    const { tutorId, docId } = req.params;
+    const { status, adminNotes = '' } = req.body;
+
+    if (!['verified', 'rejected', 'needs_reupload'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Status must be verified, rejected, or needs_reupload.'
+      });
+    }
+
+    const tutor = await TutorProfile.findById(tutorId).populate('user', 'name email');
+    if (!tutor) {
+      return res.status(404).json({ success: false, message: 'Tutor application not found.' });
+    }
+
+    const doc = tutor.verificationDocuments.id(docId);
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Document not found in application.' });
+    }
+
+    doc.status = status;
+    doc.adminNotes = adminNotes;
+
+    // Also sync to matching TutorQualification if any
+    const matchingQual = await TutorQualification.findOne({
+      tutor: tutor._id,
+      $or: [{ documentPath: doc.path }, { degree: doc.title }]
+    });
+    if (matchingQual) {
+      matchingQual.verificationStatus = status;
+      matchingQual.adminNotes = adminNotes;
+      matchingQual.verifiedAt = new Date();
+      matchingQual.verifiedBy = req.user.id;
+      await matchingQual.save();
+    }
+
+    // Update badge if verified/rejected
+    if (status === 'verified') {
+      if (doc.docType === 'qualification') tutor.verificationBadges.qualificationVerified = true;
+      if (doc.docType === 'identity') tutor.verificationBadges.idDocumentVerified = true;
+    }
+
+    tutor.statusHistory.push({
+      status: tutor.applicationStatus,
+      changedBy: req.user.id,
+      reason: `Document '${doc.title || doc.originalName}' marked as ${status}${adminNotes ? ': ' + adminNotes : ''}`
+    });
+
+    await tutor.save();
+
+    // Audit log
+    await AuditLog.create({
+      action: `DOCUMENT_${status.toUpperCase()}`,
+      performedBy: req.user.id,
+      targetType: 'TutorProfile',
+      targetId: tutor._id.toString(),
+      details: { docId, docTitle: doc.title, docType: doc.docType, status, adminNotes }
+    });
+
+    // Notify tutor user
+    if (tutor.user?._id) {
+      createNotification({
+        recipient: tutor.user._id,
+        title: status === 'needs_reupload'
+          ? '⚠️ Document Re-upload Requested'
+          : `Document ${status.toUpperCase()}: ${doc.title || doc.originalName}`,
+        message: status === 'needs_reupload'
+          ? `Admin requested a new upload for "${doc.title || doc.originalName}". Reason: ${adminNotes || 'Document is not clear or incomplete.'} Please open your Tutor Cart to re-upload.`
+          : `Your document "${doc.title || doc.originalName}" has been marked as ${status}. ${adminNotes ? 'Note: ' + adminNotes : ''}`,
+        type: 'verification',
+        link: '/tutor/cart'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Document status updated to ${status}.`,
+      document: doc,
+      tutor
     });
   } catch (err) {
     next(err);

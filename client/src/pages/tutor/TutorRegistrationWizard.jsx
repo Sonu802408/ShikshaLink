@@ -238,6 +238,7 @@ export const TutorRegistrationWizard = () => {
   const [uploadingDocType, setUploadingDocType] = useState(null);
   const docFileInputRef = useRef(null);
   const activeUploadCategoryRef = useRef('qualification');
+  const replaceDocIdRef = useRef(null);
 
   // Load existing profile / draft on mount
   useEffect(() => {
@@ -477,9 +478,11 @@ export const TutorRegistrationWizard = () => {
   };
 
   // Document Upload
-  const handleTriggerDocUpload = (docType) => {
+  const handleTriggerDocUpload = (docType, replaceDocId = null) => {
     activeUploadCategoryRef.current = docType;
+    replaceDocIdRef.current = replaceDocId;
     if (docFileInputRef.current) {
+      docFileInputRef.current.value = '';
       docFileInputRef.current.click();
     }
   };
@@ -500,6 +503,9 @@ export const TutorRegistrationWizard = () => {
     data.append('document', file);
     data.append('docType', docType);
     data.append('title', file.name.replace(/\.[^/.]+$/, ''));
+    if (replaceDocIdRef.current) {
+      data.append('replaceDocId', replaceDocIdRef.current);
+    }
 
     try {
       const res = await apiRequest('/tutors/upload-document', {
@@ -507,7 +513,12 @@ export const TutorRegistrationWizard = () => {
         body: data
       });
       if (res.success) {
-        showToast(`${file.name} uploaded securely for verification.`, 'success');
+        showToast(
+          replaceDocIdRef.current
+            ? `Clear copy of ${file.name} uploaded successfully!`
+            : `${file.name} uploaded securely for verification.`,
+          'success'
+        );
         setFormData((prev) => ({
           ...prev,
           verificationDocuments: res.verificationDocuments || [...prev.verificationDocuments, res.document]
@@ -517,7 +528,24 @@ export const TutorRegistrationWizard = () => {
       showToast(err.message || 'Document upload failed', 'error');
     } finally {
       setUploadingDocType(null);
+      replaceDocIdRef.current = null;
       if (docFileInputRef.current) docFileInputRef.current.value = '';
+    }
+  };
+
+  const handleDeleteVerificationDoc = async (docId) => {
+    if (!window.confirm('Are you sure you want to remove this document?')) return;
+    try {
+      const res = await apiRequest(`/tutors/documents/${docId}`, { method: 'DELETE' });
+      if (res.success) {
+        showToast('Document removed.', 'success');
+        setFormData((prev) => ({
+          ...prev,
+          verificationDocuments: res.verificationDocuments || prev.verificationDocuments.filter((d) => d._id !== docId)
+        }));
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to remove document', 'error');
     }
   };
 
@@ -2014,44 +2042,75 @@ export const TutorRegistrationWizard = () => {
                 ) : (
                   <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-2xl overflow-hidden">
                     {formData.verificationDocuments.map((doc, idx) => (
-                      <div key={idx} className="p-4 flex items-center justify-between gap-3 bg-white hover:bg-slate-50/50">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs">
+                      <div key={doc._id || idx} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white hover:bg-slate-50/50">
+                        <div className="flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                             <FileCheck className="w-4 h-4 text-teal-600" />
                           </div>
                           <div>
-                            <div className="font-bold text-xs text-slate-900">{doc.title || doc.originalName}</div>
-                            <div className="text-[10px] text-slate-400 capitalize">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-xs text-slate-900">{doc.title || doc.originalName}</span>
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${
+                                doc.status === 'verified'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : doc.status === 'needs_reupload'
+                                  ? 'bg-amber-100 text-amber-900 border-amber-300 animate-pulse'
+                                  : doc.status === 'rejected'
+                                  ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200'
+                              }`}>
+                                {doc.status === 'needs_reupload' ? '⚠️ Re-upload Required' : doc.status === 'verified' ? 'Verified' : 'Pending Review'}
+                              </span>
+                            </div>
+
+                            <div className="text-[10px] text-slate-400 capitalize mt-0.5">
                               Category: {doc.docType} • Uploaded {new Date(doc.uploadedAt || Date.now()).toLocaleDateString()}
                             </div>
+
+                            {doc.adminNotes && (
+                              <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200/80 mt-1 inline-block">
+                                <strong>Admin Note:</strong> {doc.adminNotes}
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 shrink-0">
                           {(doc._id || doc.path) && (
                             <a
                               href={getDocumentUrl(doc._id || doc.path)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs font-bold text-teal-700 hover:underline flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-1 cursor-pointer"
                             >
-                              <span>View</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <span>Inspect</span>
+                              <ExternalLink className="w-3 h-3 text-slate-400" />
                             </a>
                           )}
-                          {doc.status === 'verified' ? (
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider">
-                              Verified
-                            </span>
-                          ) : doc.status === 'rejected' ? (
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 uppercase tracking-wider">
-                              Rejected
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 uppercase tracking-wider flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              <span>Pending Review</span>
-                            </span>
+
+                          <button
+                            type="button"
+                            onClick={() => handleTriggerDocUpload(doc.docType, doc._id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs ${
+                              doc.status === 'needs_reupload'
+                                ? 'bg-amber-600 hover:bg-amber-700 text-white font-black'
+                                : 'border border-slate-200 hover:bg-slate-50 text-slate-700'
+                            }`}
+                            title="Re-upload or replace with a clearer document"
+                          >
+                            <Upload className="w-3 h-3" />
+                            <span>Re-upload</span>
+                          </button>
+
+                          {doc.status !== 'verified' && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVerificationDoc(doc._id)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="Delete document"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           )}
                         </div>
                       </div>

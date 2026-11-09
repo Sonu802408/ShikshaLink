@@ -51,7 +51,7 @@ const tutorQualificationSchema = new Schema(
     },
     verificationStatus: {
       type: String,
-      enum: ['pending', 'verified', 'rejected'],
+      enum: ['pending', 'verified', 'rejected', 'needs_reupload'],
       default: 'pending'
     },
     adminNotes: {
