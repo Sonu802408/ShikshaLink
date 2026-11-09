@@ -30,6 +30,19 @@ export const getAvatarUrl = (avatarPath) => {
   return cleanPath;
 };
 
+export const getDocumentUrl = (docIdOrPath) => {
+  if (!docIdOrPath) return '#';
+  const token = getStoredToken();
+  const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+  const cleanId = String(docIdOrPath).replace(/^[/\\]+/, '');
+  const cleanPath = `/api/tutors/qualifications/${encodeURIComponent(cleanId)}/document${tokenParam}`;
+  if (API_BASE && API_BASE.startsWith('http')) {
+    const backendHost = API_BASE.replace(/\/api\/?$/, '');
+    return `${backendHost}${cleanPath}`;
+  }
+  return cleanPath;
+};
+
 export const apiRequest = async (endpoint, options = {}) => {
   const token = getStoredToken();
   const headers = { ...options.headers };

@@ -258,8 +258,8 @@ export const AdminManageTutors = () => {
   // Permanent Delete
   const handlePermanentDelete = async (e) => {
     e.preventDefault();
-    if (deleteConfirmText !== 'DELETE') {
-      showToast('Please type "DELETE" exactly to confirm permanent deletion.', 'error');
+    if (deleteConfirmText.trim().toUpperCase() !== 'DELETE') {
+      showToast('Please type "DELETE" to confirm permanent deletion.', 'error');
       return;
     }
     setDeleteSubmitting(true);
@@ -572,6 +572,10 @@ export const AdminManageTutors = () => {
         <TutorDossierModal
           tutor={inspectTutor}
           onClose={() => setInspectTutor(null)}
+          onDelete={(tutorToDelete) => {
+            setInspectTutor(null);
+            setDeleteModalTutor(tutorToDelete);
+          }}
           onApprove={async (tutorId) => {
             try {
               const res = await apiRequest(`/admin/tutors/${tutorId}/status`, {

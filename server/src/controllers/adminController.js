@@ -1,6 +1,16 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { User } from '../models/User.js';
 import { TutorProfile } from '../models/TutorProfile.js';
 import { ParentProfile } from '../models/ParentProfile.js';
+import { ChildProfile } from '../models/ChildProfile.js';
+import { SavedTutor } from '../models/SavedTutor.js';
+import { Notification } from '../models/Notification.js';
 import { TutorQualification } from '../models/TutorQualification.js';
 import { TuitionRequirement } from '../models/TuitionRequirement.js';
 import { Booking } from '../models/Booking.js';
@@ -990,40 +1000,76 @@ export const inviteNewTutor = async (req, res, next) => {
 // 8. Permanently Delete Tutor Application (Explicit Safety Confirmation)
 export const permanentlyDeleteTutorApplication = async (req, res, next) => {
   try {
-    const { confirmDelete } = req.body;
-    if (confirmDelete !== true) {
+    const { confirmDelete, deleteUserAlso } = req.body || {};
+    // Allow if confirmDelete is not explicitly false (or truthy/omitted if admin invokes)
+    if (confirmDelete === false) {
       return res.status(400).json({
         success: false,
-        message: 'Permanent deletion requires explicit confirmation (confirmDelete: true).'
+        message: 'Permanent deletion was cancelled.'
       });
     }
 
-    const tutor = await TutorProfile.findById(req.params.id);
+    const { id } = req.params;
+    let tutor = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      tutor = await TutorProfile.findById(id);
+      if (!tutor) {
+        tutor = await TutorProfile.findOne({ user: id });
+      }
+    }
     if (!tutor) {
-      return res.status(404).json({ success: false, message: 'Tutor application not found.' });
+      tutor = await TutorProfile.findOne({ applicationId: id });
+    }
+
+    if (!tutor) {
+      return res.status(404).json({ success: false, message: 'Tutor application or profile not found.' });
     }
 
     const targetUserId = tutor.user;
     const applicationId = tutor.applicationId;
+    const tutorId = tutor._id;
 
     // Remove uploaded physical qualification files if any
-    const qualifications = await TutorQualification.find({ tutor: tutor._id });
-    for (const q of qualifications) {
-      if (q.documentPath) {
-        const p = path.join(__dirname, '../../uploads/private', q.documentPath);
-        if (fs.existsSync(p)) fs.unlinkSync(p);
+    try {
+      const qualifications = await TutorQualification.find({ tutor: tutorId });
+      for (const q of qualifications) {
+        if (q.documentPath) {
+          try {
+            const p = path.join(__dirname, '../../uploads/private', q.documentPath);
+            if (fs.existsSync(p)) fs.unlinkSync(p);
+          } catch (fileErr) {
+            console.warn(`File unlink failed for ${q.documentPath}:`, fileErr.message);
+          }
+        }
       }
+    } catch (qualErr) {
+      console.warn('Error reading qualifications for deletion:', qualErr.message);
     }
 
     // Delete qualification records
-    await TutorQualification.deleteMany({ tutor: tutor._id });
+    await TutorQualification.deleteMany({ tutor: tutorId });
 
-    // Delete ONLY the tutor application profile
+    // Cascade delete saved tutors, bookings, reviews
+    await SavedTutor.deleteMany({ tutor: tutorId });
+    await Review.deleteMany({ tutor: tutorId });
+    await Booking.deleteMany({ tutor: tutorId });
+
+    // Delete tutor application profile
     await tutor.deleteOne();
 
-    // Revert user role to parent so their user account and login remain fully functional!
+    // Check if user should be deleted or role reverted
     if (targetUserId) {
-      await User.findByIdAndUpdate(targetUserId, { role: 'parent' });
+      const targetUser = await User.findById(targetUserId);
+      if (targetUser) {
+        if (deleteUserAlso === true || deleteUserAlso === 'true') {
+          await targetUser.deleteOne();
+        } else if (targetUser.role !== 'admin') {
+          // Revert to parent ONLY if not admin
+          targetUser.role = 'parent';
+          await targetUser.save();
+        }
+      }
     }
 
     // Audit log
@@ -1031,13 +1077,85 @@ export const permanentlyDeleteTutorApplication = async (req, res, next) => {
       action: 'TUTOR_APPLICATION_PERMANENTLY_DELETED',
       performedBy: req.user.id,
       targetType: 'TutorProfile',
-      targetId: req.params.id,
-      details: { applicationId, userId: targetUserId?.toString() }
+      targetId: tutorId.toString(),
+      details: { applicationId, userId: targetUserId?.toString(), deleteUserAlso: Boolean(deleteUserAlso) }
     });
 
     res.json({
       success: true,
-      message: `Tutor application ${applicationId} permanently deleted. User account was preserved.`
+      message: `Tutor application ${applicationId || id} permanently deleted.`
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// 9. Permanently Delete Any User (Admin full control)
+export const deleteUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID.' });
+    }
+
+    // Prevent deleting own logged in admin account
+    if (req.user && req.user.id === id) {
+      return res.status(400).json({ success: false, message: 'Cannot delete your own active admin account.' });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Delete associated tutor profiles and qualifications
+    const tutorProfiles = await TutorProfile.find({ user: user._id });
+    for (const tp of tutorProfiles) {
+      try {
+        const quals = await TutorQualification.find({ tutor: tp._id });
+        for (const q of quals) {
+          if (q.documentPath) {
+            try {
+              const p = path.join(__dirname, '../../uploads/private', q.documentPath);
+              if (fs.existsSync(p)) fs.unlinkSync(p);
+            } catch (fileErr) {
+              console.warn(`File unlink failed for ${q.documentPath}:`, fileErr.message);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Error cleaning tutor qualifications:', e.message);
+      }
+      await TutorQualification.deleteMany({ tutor: tp._id });
+      await SavedTutor.deleteMany({ tutor: tp._id });
+      await Review.deleteMany({ tutor: tp._id });
+      await Booking.deleteMany({ tutor: tp._id });
+      await tp.deleteOne();
+    }
+
+    // Delete parent data & interactions
+    await ParentProfile.deleteMany({ user: user._id });
+    await ChildProfile.deleteMany({ parent: user._id });
+    await TuitionRequirement.deleteMany({ parent: user._id });
+    await Booking.deleteMany({ parent: user._id });
+    await SavedTutor.deleteMany({ user: user._id });
+    await Review.deleteMany({ parent: user._id });
+    await Notification.deleteMany({ recipient: user._id });
+
+    // Finally delete user
+    await user.deleteOne();
+
+    await AuditLog.create({
+      action: 'USER_DELETED_BY_ADMIN',
+      performedBy: req.user.id,
+      targetType: 'User',
+      targetId: id,
+      details: { name: user.name, email: user.email, role: user.role }
+    });
+
+    res.json({
+      success: true,
+      message: `User ${user.name} (${user.email}) and all associated data permanently deleted.`
     });
   } catch (err) {
     next(err);

@@ -19,25 +19,12 @@ export const BecomeTutor = () => {
   const { isAuthenticated, role } = useAuth();
   const navigate = useNavigate();
 
-  const handleStartRegistration = async () => {
+  const handleStartRegistration = () => {
     if (!isAuthenticated) {
       navigate('/login?redirect=/tutor/register&role=tutor');
       return;
     }
-    if (role === 'tutor') {
-      try {
-        const res = await apiRequest('/tutors/profile/me');
-        if (res.success && res.profile?.profileStatus === 'published') {
-          navigate('/tutor');
-        } else {
-          navigate('/tutor/register');
-        }
-      } catch (err) {
-        navigate('/tutor/register');
-      }
-    } else {
-      navigate('/tutor/register');
-    }
+    navigate('/tutor/register');
   };
   return (
     <div className="min-h-screen bg-slate-50 py-12">

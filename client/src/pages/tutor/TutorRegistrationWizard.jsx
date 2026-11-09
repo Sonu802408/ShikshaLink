@@ -30,9 +30,10 @@ import {
   Phone,
   Mail,
   Home as HomeIcon,
-  Laptop
+  Laptop,
+  ExternalLink
 } from 'lucide-react';
-import { apiRequest, getAvatarUrl } from '../../services/api';
+import { apiRequest, getAvatarUrl, getDocumentUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 
@@ -152,6 +153,7 @@ export const TutorRegistrationWizard = () => {
   // Form State across all 8 steps
   const [formData, setFormData] = useState({
     // Step 1: Personal
+    avatar: '',
     fullName: '',
     dateOfBirth: '',
     gender: '',
@@ -244,8 +246,10 @@ export const TutorRegistrationWizard = () => {
         const res = await apiRequest('/tutors/profile/me');
         if (res.success && res.profile) {
           const p = res.profile;
+          const initialAvatar = p.avatar || p.user?.avatar || user?.avatar || '';
           setFormData((prev) => ({
             ...prev,
+            avatar: initialAvatar || prev.avatar,
             fullName: p.fullName || p.user?.name || prev.fullName,
             email: p.user?.email || prev.email,
             mobileNumber: p.user?.phone || prev.mobileNumber,
@@ -314,6 +318,12 @@ export const TutorRegistrationWizard = () => {
             setCompletionPercentage(res.profileCompletion);
           }
 
+          // If tutor already published and no specific step requested, redirect to dashboard
+          if (p.profileStatus === 'published' && !searchParams.get('step')) {
+            navigate('/tutor', { replace: true });
+            return;
+          }
+
           // If step query param provided, honor it, otherwise resume at saved step
           const stepParam = parseInt(searchParams.get('step'), 10);
           if (stepParam >= 1 && stepParam <= 9) {
@@ -330,30 +340,57 @@ export const TutorRegistrationWizard = () => {
     };
 
     loadProfile();
-  }, [searchParams, showToast]);
+  }, [searchParams, showToast, navigate]);
 
-  // Debounced auto-save function
+  const isSavingRef = useRef(false);
+  const pendingSaveRef = useRef(null);
+  const lastSavedJsonRef = useRef('');
+  const formDataRef = useRef(formData);
+  formDataRef.current = formData;
+
+  // Optimized, non-blocking auto-save function
   const saveDraftToServer = useCallback(async (dataToSave, targetStep = currentStep) => {
+    const payload = {
+      ...dataToSave,
+      registrationStep: targetStep
+    };
+
+    // Skip redundant network requests if data has not changed
+    const payloadJson = JSON.stringify(payload);
+    if (payloadJson === lastSavedJsonRef.current) {
+      return;
+    }
+
+    if (isSavingRef.current) {
+      pendingSaveRef.current = { dataToSave, targetStep };
+      return;
+    }
+
+    isSavingRef.current = true;
     setSavingDraft(true);
     try {
-      const payload = {
-        ...dataToSave,
-        registrationStep: targetStep
-      };
       const res = await apiRequest('/tutors/draft', {
         method: 'PUT',
-        body: JSON.stringify(payload)
+        body: payloadJson
       });
       if (res.success) {
+        lastSavedJsonRef.current = payloadJson;
         setLastSavedTime(new Date());
         if (res.profileCompletion !== undefined) {
-          setCompletionPercentage(res.profileCompletion);
+          setCompletionPercentage((prev) => (prev !== res.profileCompletion ? res.profileCompletion : prev));
         }
       }
     } catch (err) {
       console.warn('Draft auto-save notice:', err.message);
     } finally {
+      isSavingRef.current = false;
       setSavingDraft(false);
+
+      if (pendingSaveRef.current) {
+        const nextSave = pendingSaveRef.current;
+        pendingSaveRef.current = null;
+        saveDraftToServer(nextSave.dataToSave, nextSave.targetStep);
+      }
     }
   }, [currentStep]);
 
@@ -365,8 +402,8 @@ export const TutorRegistrationWizard = () => {
       return;
     }
     const timer = setTimeout(() => {
-      saveDraftToServer(formData, currentStep);
-    }, 2000);
+      saveDraftToServer(formDataRef.current, currentStep);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [formData, currentStep, saveDraftToServer]);
@@ -377,12 +414,13 @@ export const TutorRegistrationWizard = () => {
     showToast('Draft progress saved successfully to your account.', 'success');
   };
 
-  // Step change with saving
-  const handleGoToStep = async (stepNum) => {
+  // Instant step change with non-blocking background saving
+  const handleGoToStep = (stepNum) => {
     if (stepNum < 1 || stepNum > TOTAL_STEPS) return;
-    await saveDraftToServer(formData, stepNum);
     setCurrentStep(stepNum);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Save draft in the background without blocking UI
+    saveDraftToServer(formData, stepNum);
   };
 
   const handleNextStep = () => {
@@ -407,7 +445,8 @@ export const TutorRegistrationWizard = () => {
       return;
     }
 
-    setPhotoPreview(URL.createObjectURL(file));
+    const tempBlob = URL.createObjectURL(file);
+    setPhotoPreview(tempBlob);
     setUploadingPhoto(true);
 
     const data = new FormData();
@@ -418,16 +457,22 @@ export const TutorRegistrationWizard = () => {
         method: 'POST',
         body: data
       });
-      if (res.success) {
+      if (res.success && res.avatarUrl) {
         setPhotoPreview(res.avatarUrl);
         setFormData((prev) => ({ ...prev, avatar: res.avatarUrl }));
+        formDataRef.current = { ...formDataRef.current, avatar: res.avatarUrl };
+        // Immediately persist to draft on backend
+        saveDraftToServer({ ...formDataRef.current, avatar: res.avatarUrl });
         showToast('Profile photo updated successfully!', 'success');
         refreshUser();
       }
     } catch (err) {
       showToast(err.message || 'Photo upload failed', 'error');
+      // If upload failed, revert preview to saved avatar
+      setPhotoPreview(formDataRef.current.avatar || user?.avatar || null);
     } finally {
       setUploadingPhoto(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
     }
   };
 
@@ -565,6 +610,12 @@ export const TutorRegistrationWizard = () => {
       : (formData.customSubjects && formData.customSubjects.length > 0 ? formData.customSubjects : ['Mathematics']);
     const finalHourlyFee = Number(formData.hourlyFee) > 0 ? Number(formData.hourlyFee) : 600;
 
+    const safeAvatar = (formData.avatar && typeof formData.avatar === 'string' && !formData.avatar.startsWith('blob:'))
+      ? formData.avatar
+      : (photoPreview && typeof photoPreview === 'string' && !photoPreview.startsWith('blob:')
+        ? photoPreview
+        : (user?.avatar && typeof user.avatar === 'string' && !user.avatar.startsWith('blob:') ? user.avatar : ''));
+
     const finalData = {
       ...formData,
       fullName: finalFullName,
@@ -576,7 +627,7 @@ export const TutorRegistrationWizard = () => {
       degreeCourseName: formData.degreeCourseName || formData.highestQualification || 'Master / Bachelor Degree',
       subjects: finalSubjects,
       hourlyFee: finalHourlyFee,
-      avatar: photoPreview || formData.avatar || user?.avatar || '',
+      avatar: safeAvatar,
       termsAccepted: true
     };
 
@@ -1976,7 +2027,18 @@ export const TutorRegistrationWizard = () => {
                           </div>
                         </div>
 
-                        <div>
+                        <div className="flex items-center gap-3">
+                          {(doc._id || doc.path) && (
+                            <a
+                              href={getDocumentUrl(doc._id || doc.path)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-bold text-teal-700 hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>View</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
                           {doc.status === 'verified' ? (
                             <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider">
                               Verified
@@ -2032,10 +2094,24 @@ export const TutorRegistrationWizard = () => {
                       Edit
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div>
-                      <span className="text-slate-400 block text-[11px]">Full Name</span>
-                      <span className="font-bold text-slate-800">{formData.fullName || '—'}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs items-center">
+                    <div className="flex items-center gap-3 col-span-1 sm:col-span-1">
+                      <div className="w-12 h-12 rounded-xl bg-teal-700 text-white flex items-center justify-center font-bold text-sm overflow-hidden shrink-0 shadow-xs ring-2 ring-teal-600/30">
+                        {photoPreview ? (
+                          <img
+                            src={getAvatarUrl(photoPreview)}
+                            alt="Tutor"
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <span>{formData.fullName?.[0] || user?.name?.[0] || 'T'}</span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[11px]">Full Name</span>
+                        <span className="font-bold text-slate-800">{formData.fullName || '—'}</span>
+                      </div>
                     </div>
                     <div>
                       <span className="text-slate-400 block text-[11px]">Phone</span>
@@ -2143,6 +2219,50 @@ export const TutorRegistrationWizard = () => {
                       </span>
                     </div>
                   </div>
+                </div>
+
+                {/* 8. Uploaded Verification Documents Card */}
+                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-teal-600" />
+                      <span>8. Confidential Uploaded Documents ({formData.verificationDocuments.length})</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleGoToStep(8)}
+                      className="text-xs font-bold text-teal-700 hover:underline cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                  {formData.verificationDocuments.length === 0 ? (
+                    <div className="text-xs text-slate-400 italic">No verification documents attached yet (optional).</div>
+                  ) : (
+                    <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-xl overflow-hidden bg-white">
+                      {formData.verificationDocuments.map((doc, idx) => (
+                        <div key={idx} className="p-3 flex items-center justify-between gap-3 text-xs">
+                          <div>
+                            <div className="font-bold text-slate-800">{doc.title || doc.originalName || 'Document'}</div>
+                            <span className="text-slate-400 capitalize text-[10px]">
+                              Type: <strong>{doc.docType}</strong> • Status: {doc.status || 'Pending'}
+                            </span>
+                          </div>
+                          {(doc._id || doc.path) && (
+                            <a
+                              href={getDocumentUrl(doc._id || doc.path)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer text-[11px]"
+                            >
+                              <span>Inspect</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

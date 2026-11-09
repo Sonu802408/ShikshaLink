@@ -20,7 +20,8 @@ import {
   editTutorByAdmin,
   addExistingUserAsTutor,
   inviteNewTutor,
-  permanentlyDeleteTutorApplication
+  permanentlyDeleteTutorApplication,
+  deleteUser
 } from '../controllers/adminController.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { ROLES } from '../config/constants.js';
@@ -46,6 +47,7 @@ router.delete('/tutors/:id/permanent', permanentlyDeleteTutorApplication);
 
 router.get('/users', getAllUsers);
 router.patch('/users/:id/status', toggleUserStatus);
+router.delete('/users/:id', deleteUser);
 
 router.get('/tickets', getAllTickets);
 router.patch('/tickets/:id/resolve', resolveTicket);

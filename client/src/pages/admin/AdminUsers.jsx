@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, UserX, UserCheck, ShieldAlert, ArrowUpDown } from 'lucide-react';
+import { Users, Search, UserX, UserCheck, ShieldAlert, ArrowUpDown, Trash2 } from 'lucide-react';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
@@ -59,6 +59,23 @@ export const AdminUsers = () => {
       }
     } catch (err) {
       showToast(err.message || 'Action failed', 'error');
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    if (!window.confirm(`Are you sure you want to PERMANENTLY delete user "${user.name}" (${user.email})? This will delete all their tutor profiles, applications, bookings, and data.`)) {
+      return;
+    }
+    try {
+      const res = await apiRequest(`/admin/users/${user._id}`, {
+        method: 'DELETE'
+      });
+      if (res.success) {
+        showToast(res.message, 'success');
+        setUsers((prev) => prev.filter((u) => u._id !== user._id));
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to delete user', 'error');
     }
   };
 
@@ -170,18 +187,27 @@ export const AdminUsers = () => {
                       {new Date(u.createdAt).toLocaleDateString()}
                     </td>
                     <td className="py-3 px-4 text-right">
-                      {u.role !== 'admin' && (
+                      <div className="flex items-center justify-end gap-2">
+                        {u.role !== 'admin' && (
+                          <button
+                            onClick={() => handleToggleStatus(u._id, u.status)}
+                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              u.status === 'active'
+                                ? 'border border-rose-200 text-rose-600 hover:bg-rose-50'
+                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                            }`}
+                          >
+                            {u.status === 'active' ? 'Suspend' : 'Activate'}
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleToggleStatus(u._id, u.status)}
-                          className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
-                            u.status === 'active'
-                              ? 'border border-rose-200 text-rose-600 hover:bg-rose-50'
-                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          }`}
+                          onClick={() => handleDeleteUser(u)}
+                          className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          title={`Permanently delete user ${u.name}`}
                         >
-                          {u.status === 'active' ? 'Suspend' : 'Activate'}
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))

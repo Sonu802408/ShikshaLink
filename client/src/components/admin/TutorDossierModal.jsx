@@ -19,15 +19,17 @@ import {
   Layers,
   ExternalLink,
   X,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
-import { getAvatarUrl } from '../../services/api';
+import { getAvatarUrl, getDocumentUrl } from '../../services/api';
 
 export const TutorDossierModal = ({
   tutor,
   onClose,
   onApprove,
   onReject,
+  onDelete,
   approving = false
 }) => {
   if (!tutor) return null;
@@ -375,7 +377,7 @@ export const TutorDossierModal = ({
                       </span>
                     </div>
                     <a
-                      href={`/api/tutors/qualifications/${doc._id}/document`}
+                      href={getDocumentUrl(doc._id || doc.path)}
                       target="_blank"
                       rel="noreferrer"
                       className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer text-[11px]"
@@ -421,10 +423,22 @@ export const TutorDossierModal = ({
               </div>
             ) : (
               <>
+                {onDelete && (
+                  <button
+                    type="button"
+                    onClick={() => onDelete(tutor)}
+                    className="px-3.5 py-2.5 rounded-xl border border-rose-300 text-rose-600 hover:bg-rose-50 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                    title="Permanently delete this tutor application"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Application</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => setShowRejectInput(true)}
-                  className="px-4 py-2.5 rounded-xl border border-rose-300 text-rose-700 hover:bg-rose-50 font-bold text-xs cursor-pointer transition-colors"
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold text-xs cursor-pointer transition-colors"
                 >
                   Reject Application
                 </button>

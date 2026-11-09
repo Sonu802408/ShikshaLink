@@ -35,26 +35,13 @@ export const Navbar = () => {
     setNotifDropdownOpen(false);
   }, [location.pathname, location.search]);
 
-  const handleTutorNavigation = async (e) => {
+  const handleTutorNavigation = (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
       navigate('/login?redirect=/tutor/register&role=tutor');
       return;
     }
-    if (role === 'tutor') {
-      try {
-        const res = await apiRequest('/tutors/profile/me');
-        if (res.success && res.profile?.profileStatus === 'published') {
-          navigate('/tutor');
-        } else {
-          navigate('/tutor/register');
-        }
-      } catch (err) {
-        navigate('/tutor/register');
-      }
-    } else {
-      navigate('/tutor/register');
-    }
+    navigate('/tutor/register');
   };
 
   const handleLogout = () => {

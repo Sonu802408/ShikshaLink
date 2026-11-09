@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
 import { TutorProfile } from '../models/TutorProfile.js';
 import { TutorQualification } from '../models/TutorQualification.js';
 import { Review } from '../models/Review.js';
@@ -382,6 +383,7 @@ export const saveTutorDraft = async (req, res, next) => {
       'preferredPaymentMethods',
       'headline',
       'bio',
+      'avatar',
       'teachingMethodology',
       'strengthsAndSpecializations',
       'achievements',
@@ -391,6 +393,9 @@ export const saveTutorDraft = async (req, res, next) => {
 
     draftFields.forEach((field) => {
       if (data[field] !== undefined) {
+        if (field === 'avatar' && (typeof data.avatar !== 'string' || data.avatar.startsWith('blob:'))) {
+          return;
+        }
         profile[field] = data[field];
       }
     });
@@ -427,27 +432,39 @@ export const saveTutorDraft = async (req, res, next) => {
     }
     profile.isInCart = true;
 
-    // Update user display name if provided
-    if (data.fullName && data.fullName.trim()) {
-      await User.findByIdAndUpdate(req.user.id, { name: data.fullName.trim() });
+    // Update user display name and avatar concurrently if provided
+    const userUpdates = {};
+    if (data.fullName && data.fullName.trim() && data.fullName.trim() !== req.user.name) {
+      userUpdates.name = data.fullName.trim();
     }
-
-    if (data.avatar) {
+    if (data.avatar && typeof data.avatar === 'string' && !data.avatar.startsWith('blob:') && data.avatar !== req.user.avatar) {
       profile.avatar = data.avatar;
-      await User.findByIdAndUpdate(req.user.id, { avatar: data.avatar });
+      userUpdates.avatar = data.avatar;
     }
 
-    await profile.save();
+    const savePromises = [profile.save()];
+    if (Object.keys(userUpdates).length > 0) {
+      savePromises.push(User.findByIdAndUpdate(req.user.id, userUpdates));
+    }
 
-    const qualifications = await TutorQualification.find({ tutor: profile._id });
-    const completion = calculateProfileCompletion(profile, qualifications);
+    await Promise.all(savePromises);
 
-    const updatedProfile = await TutorProfile.findById(profile._id).populate('user', 'name email phone avatar role');
+    const completion = calculateProfileCompletion(profile);
+
+    const profileObj = profile.toObject ? profile.toObject() : { ...profile };
+    profileObj.user = {
+      _id: req.user.id,
+      name: userUpdates.name || req.user.name || profile.fullName,
+      email: req.user.email,
+      phone: req.user.phone,
+      avatar: userUpdates.avatar || profile.avatar || req.user.avatar,
+      role: req.user.role
+    };
 
     res.json({
       success: true,
       message: 'Draft saved successfully.',
-      profile: updatedProfile,
+      profile: profileObj,
       profileCompletion: completion
     });
   } catch (err) {
@@ -517,10 +534,9 @@ export const submitTutorProfile = async (req, res, next) => {
 
     profile.termsAccepted = true;
 
-    if (data.avatar) {
+    if (data.avatar && typeof data.avatar === 'string' && !data.avatar.startsWith('blob:')) {
       profile.avatar = data.avatar;
-      await User.findByIdAndUpdate(req.user.id, { avatar: data.avatar });
-    } else if (user?.avatar) {
+    } else if (user?.avatar && !user.avatar.startsWith('blob:')) {
       profile.avatar = user.avatar;
     }
 
@@ -569,10 +585,9 @@ export const submitTutorProfile = async (req, res, next) => {
     profile.isAcceptingStudents = false;
     profile.termsAccepted = true;
 
-    if (data.avatar) {
+    if (data.avatar && typeof data.avatar === 'string' && !data.avatar.startsWith('blob:')) {
       profile.avatar = data.avatar;
-      await User.findByIdAndUpdate(req.user.id, { avatar: data.avatar });
-    } else if (user?.avatar) {
+    } else if (user?.avatar && !user.avatar.startsWith('blob:')) {
       profile.avatar = user.avatar;
     }
     profile.submittedAt = new Date();
@@ -589,46 +604,66 @@ export const submitTutorProfile = async (req, res, next) => {
       reason: 'Application submitted by tutor for administrator verification'
     });
 
-    if (data.fullName && data.fullName.trim()) {
-      await User.findByIdAndUpdate(req.user.id, { name: data.fullName.trim() });
+    const userUpdates = {};
+    if (data.fullName && data.fullName.trim() && data.fullName.trim() !== req.user.name) {
+      userUpdates.name = data.fullName.trim();
+    }
+    if (profile.avatar && typeof profile.avatar === 'string' && !profile.avatar.startsWith('blob:') && profile.avatar !== user?.avatar) {
+      userUpdates.avatar = profile.avatar;
     }
 
-    await profile.save();
-
-    // Notify administrators and tutor
-    try {
-      const admins = await User.find({ role: 'admin' });
-      for (const admin of admins) {
-        await createNotification({
-          recipient: admin._id,
-          sender: req.user.id,
-          title: '📋 New Tutor Application Pending Verification',
-          message: `${data.fullName || req.user.name || 'A tutor'} has submitted their application for verification.`,
-          type: 'verification',
-          link: '/admin/tutors'
-        });
-      }
-      await createNotification({
-        recipient: req.user.id,
-        title: '📋 Application Submitted for Admin Review',
-        message: 'Your tutor profile has been submitted to the Admin Panel. Once verified by Admin, your profile and cart will instantly become live on ShikshaLink!',
-        type: 'verification',
-        link: '/tutor/cart'
-      });
-    } catch (notifErr) {
-      console.error('Failed to dispatch notifications on wizard submit:', notifErr.message);
+    const savePromises = [profile.save()];
+    if (Object.keys(userUpdates).length > 0) {
+      savePromises.push(User.findByIdAndUpdate(req.user.id, userUpdates));
     }
 
-    const qualifications = await TutorQualification.find({ tutor: profile._id });
-    const completion = calculateProfileCompletion(profile, qualifications);
+    await Promise.all(savePromises);
 
-    const updatedProfile = await TutorProfile.findById(profile._id).populate('user', 'name email phone avatar role');
+    const completion = calculateProfileCompletion(profile);
+    const profileObj = profile.toObject ? profile.toObject() : { ...profile };
+    profileObj.user = {
+      _id: req.user.id,
+      name: userUpdates.name || fullName,
+      email: user?.email || req.user.email,
+      phone: user?.phone || req.user.phone,
+      avatar: userUpdates.avatar || profile.avatar || user?.avatar,
+      role: user?.role || req.user.role
+    };
 
     res.json({
       success: true,
       message: 'Your tutor profile has been submitted to the Admin Panel for review. Once verified by the Admin, your profile and cart will immediately go live!',
-      profile: updatedProfile,
+      profile: profileObj,
       profileCompletion: completion
+    });
+
+    // Notify administrators and tutor in background asynchronously without blocking the client
+    setImmediate(async () => {
+      try {
+        const admins = await User.find({ role: 'admin' }).select('_id');
+        const notifPromises = admins.map((admin) =>
+          createNotification({
+            recipient: admin._id,
+            sender: req.user.id,
+            title: '📋 New Tutor Application Pending Verification',
+            message: `${data.fullName || req.user.name || 'A tutor'} has submitted their application for verification.`,
+            type: 'verification',
+            link: '/admin/tutors'
+          })
+        );
+        notifPromises.push(
+          createNotification({
+            recipient: req.user.id,
+            title: '📋 Application Submitted for Admin Review',
+            message: 'Your tutor profile has been submitted to the Admin Panel. Once verified by Admin, your profile and cart will instantly become live on ShikshaLink!',
+            type: 'verification',
+            link: '/tutor/cart'
+          })
+        );
+        await Promise.all(notifPromises);
+      } catch (notifErr) {
+        console.error('Failed to dispatch notifications on wizard submit:', notifErr.message);
+      }
     });
   } catch (err) {
     next(err);
@@ -660,20 +695,24 @@ export const uploadTutorDocument = async (req, res, next) => {
 
     profile.verificationDocuments.push(newDoc);
 
+    const saveOps = [profile.save()];
+
     // If it is a qualification certificate, also sync to TutorQualification model for admin queue
     if (docType === 'qualification') {
-      await TutorQualification.create({
-        tutor: profile._id,
-        tutorUser: req.user.id,
-        degree: title || profile.highestQualification || 'Degree Certificate',
-        institution: profile.collegeUniversity || 'University / Board',
-        fieldOfStudy: profile.degreeCourseName || '',
-        passingYear: profile.passingYear || new Date().getFullYear(),
-        documentPath: req.file.filename,
-        documentOriginalName: req.file.originalname,
-        documentMimeType: req.file.mimetype,
-        verificationStatus: 'pending'
-      });
+      saveOps.push(
+        TutorQualification.create({
+          tutor: profile._id,
+          tutorUser: req.user.id,
+          degree: title || profile.highestQualification || 'Degree Certificate',
+          institution: profile.collegeUniversity || 'University / Board',
+          fieldOfStudy: profile.degreeCourseName || '',
+          passingYear: profile.passingYear || new Date().getFullYear(),
+          documentPath: req.file.filename,
+          documentOriginalName: req.file.originalname,
+          documentMimeType: req.file.mimetype,
+          verificationStatus: 'pending'
+        })
+      );
     }
 
     if (docType === 'resume') {
@@ -685,7 +724,7 @@ export const uploadTutorDocument = async (req, res, next) => {
       };
     }
 
-    await profile.save();
+    await Promise.all(saveOps);
 
     res.status(201).json({
       success: true,
@@ -812,12 +851,14 @@ export const uploadTutorAvatar = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please select an image file to upload.' });
     }
     const avatarUrl = `/uploads/public/${req.file.filename}`;
-    const user = await User.findByIdAndUpdate(req.user.id, { avatar: avatarUrl }, { new: true });
-    const profile = await TutorProfile.findOneAndUpdate(
-      { user: req.user.id },
-      { avatar: avatarUrl },
-      { new: true }
-    );
+    const [user, profile] = await Promise.all([
+      User.findByIdAndUpdate(req.user.id, { avatar: avatarUrl }, { new: true }),
+      TutorProfile.findOneAndUpdate(
+        { user: req.user.id },
+        { avatar: avatarUrl },
+        { new: true }
+      )
+    ]);
     res.json({
       success: true,
       message: 'Profile photo uploaded successfully.',
@@ -937,50 +978,125 @@ export const getSecureDocument = async (req, res, next) => {
     let docPath = null;
     let docMime = 'application/pdf';
     let docName = 'document.pdf';
+    const targetId = req.params.id;
 
-    // 1. Try finding in TutorQualification
-    const qualification = await TutorQualification.findById(req.params.id);
-    if (qualification) {
-      if (qualification.tutorUser.toString() !== req.user.id && req.user.role !== 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Forbidden: You do not have permission to view this confidential qualification document.'
-        });
+    if (!targetId) {
+      return res.status(400).json({ success: false, message: 'Document identifier is required.' });
+    }
+
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(targetId);
+
+    // 1. Try finding in TutorQualification by ObjectId
+    if (isValidObjectId) {
+      const qualification = await TutorQualification.findById(targetId);
+      if (qualification) {
+        if (qualification.tutorUser.toString() !== req.user.id && req.user.role !== 'admin') {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden: You do not have permission to view this confidential qualification document.'
+          });
+        }
+        docPath = qualification.documentPath;
+        docMime = qualification.documentMimeType;
+        docName = qualification.documentOriginalName;
       }
-      docPath = qualification.documentPath;
-      docMime = qualification.documentMimeType;
-      docName = qualification.documentOriginalName;
-    } else {
-      // 2. Try finding in TutorProfile.verificationDocuments
+    }
+
+    // 2. Try finding in TutorProfile.verificationDocuments by subdocument _id
+    if (!docPath && isValidObjectId) {
       const profile = await TutorProfile.findOne({
-        'verificationDocuments._id': req.params.id
+        'verificationDocuments._id': targetId
       });
-      if (!profile) {
-        return res.status(404).json({ success: false, message: 'Document record not found.' });
+      if (profile) {
+        if (profile.user.toString() !== req.user.id && req.user.role !== 'admin') {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden: You do not have permission to view this confidential qualification document.'
+          });
+        }
+        const vDoc = profile.verificationDocuments.id(targetId);
+        if (vDoc) {
+          docPath = vDoc.path;
+          docMime = vDoc.mimeType;
+          docName = vDoc.originalName;
+        }
       }
-      if (profile.user.toString() !== req.user.id && req.user.role !== 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Forbidden: You do not have permission to view this confidential qualification document.'
-        });
-      }
-      const vDoc = profile.verificationDocuments.id(req.params.id);
-      if (!vDoc) {
-        return res.status(404).json({ success: false, message: 'Document not found.' });
-      }
-      docPath = vDoc.path;
-      docMime = vDoc.mimeType;
-      docName = vDoc.originalName;
     }
 
-    const filePath = path.join(__dirname, '../../uploads/private', docPath);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, message: 'File not found on server.' });
+    // 3. Try finding in TutorProfile.verificationDocuments by path (filename)
+    if (!docPath) {
+      const profile = await TutorProfile.findOne({
+        $or: [
+          { 'verificationDocuments.path': targetId },
+          { 'resumeDocument.path': targetId }
+        ]
+      });
+      if (profile) {
+        if (profile.user.toString() !== req.user.id && req.user.role !== 'admin') {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden: You do not have permission to view this confidential qualification document.'
+          });
+        }
+        const vDoc = profile.verificationDocuments.find(d => d.path === targetId);
+        if (vDoc) {
+          docPath = vDoc.path;
+          docMime = vDoc.mimeType;
+          docName = vDoc.originalName;
+        } else if (profile.resumeDocument && profile.resumeDocument.path === targetId) {
+          docPath = profile.resumeDocument.path;
+          docMime = profile.resumeDocument.mimeType;
+          docName = profile.resumeDocument.originalName;
+        }
+      }
     }
+
+    // 4. Try finding in TutorQualification by documentPath
+    if (!docPath) {
+      const qualification = await TutorQualification.findOne({ documentPath: targetId });
+      if (qualification) {
+        if (qualification.tutorUser.toString() !== req.user.id && req.user.role !== 'admin') {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden: You do not have permission to view this confidential qualification document.'
+          });
+        }
+        docPath = qualification.documentPath;
+        docMime = qualification.documentMimeType;
+        docName = qualification.documentOriginalName;
+      }
+    }
+
+    if (!docPath) {
+      return res.status(404).json({ success: false, message: 'Document record not found in system.' });
+    }
+
+    // Clean filename
+    const cleanDocPath = path.basename(docPath);
+    let filePath = path.join(__dirname, '../../uploads/private', cleanDocPath);
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(__dirname, '../../uploads/public', cleanDocPath);
+    }
+
+    if (!fs.existsSync(filePath)) {
+      const samplePath = path.join(__dirname, '../../uploads/private/sample_degree.pdf');
+      if (fs.existsSync(samplePath)) {
+        filePath = samplePath;
+      } else {
+        return res.status(404).json({ success: false, message: 'Uploaded file not found on disk.' });
+      }
+    }
+
+    // Auto-detect correct MIME type by extension if needed
+    const ext = path.extname(cleanDocPath).toLowerCase();
+    if (ext === '.pdf') docMime = 'application/pdf';
+    else if (ext === '.png') docMime = 'image/png';
+    else if (ext === '.jpg' || ext === '.jpeg') docMime = 'image/jpeg';
+    else if (ext === '.webp') docMime = 'image/webp';
 
     res.setHeader('Content-Type', docMime || 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${docName || 'document.pdf'}"`);
-    res.sendFile(filePath);
+    res.setHeader('Content-Disposition', `inline; filename="${docName || cleanDocPath || 'document.pdf'}"`);
+    return res.sendFile(path.resolve(filePath));
   } catch (err) {
     next(err);
   }

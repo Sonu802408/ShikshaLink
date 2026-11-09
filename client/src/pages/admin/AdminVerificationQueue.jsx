@@ -18,7 +18,7 @@ import {
   Layers,
   Sparkles
 } from 'lucide-react';
-import { apiRequest, getAvatarUrl } from '../../services/api';
+import { apiRequest, getAvatarUrl, getDocumentUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import { TutorDossierModal } from '../../components/admin/TutorDossierModal';
 
@@ -437,7 +437,7 @@ export const AdminVerificationQueue = () => {
                     <span>Proof File: <strong>{item.documentOriginalName || 'document.pdf'}</strong></span>
                   </div>
                   <a
-                    href={`/api/tutors/qualifications/${item._id}/document`}
+                    href={getDocumentUrl(item._id || item.documentPath)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-xl bg-slate-900 text-white font-bold flex items-center gap-1.5 hover:bg-slate-800 shadow-xs cursor-pointer"
@@ -493,6 +493,22 @@ export const AdminVerificationQueue = () => {
           onClose={() => setInspectTutor(null)}
           onApprove={handleApproveTutor}
           onReject={handleRejectTutor}
+          onDelete={async (tutorToDelete) => {
+            if (!window.confirm(`Permanently delete tutor application ${tutorToDelete.applicationId || ''}?`)) return;
+            try {
+              const res = await apiRequest(`/admin/tutors/${tutorToDelete._id}/permanent`, {
+                method: 'DELETE',
+                body: JSON.stringify({ confirmDelete: true })
+              });
+              if (res.success) {
+                showToast(res.message || 'Tutor application permanently deleted', 'success');
+                setInspectTutor(null);
+                fetchQueue();
+              }
+            } catch (err) {
+              showToast(err.message || 'Failed to delete tutor application', 'error');
+            }
+          }}
           approving={approvingId === inspectTutor._id}
         />
       )}

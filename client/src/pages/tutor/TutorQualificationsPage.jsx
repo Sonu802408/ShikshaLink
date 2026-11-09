@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   ExternalLink
 } from 'lucide-react';
-import { apiRequest } from '../../services/api';
+import { apiRequest, getDocumentUrl } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
 export const TutorQualificationsPage = () => {
@@ -246,7 +246,7 @@ export const TutorQualificationsPage = () => {
 
                 <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
                   <a
-                    href={`/api/tutors/qualifications/${q._id}/document`}
+                    href={getDocumentUrl(q._id || q.documentPath)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-teal-700 font-bold hover:underline flex items-center gap-1"

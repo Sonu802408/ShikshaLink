@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, MapPin, Clock, Heart, Sparkles, Code2, Globe } from 'lucide-react';
+import { Star, MapPin, Clock, Heart, Sparkles, Code2, Globe, Trash2 } from 'lucide-react';
 import { VerificationBadge, TeachingModeBadge } from '../common/Badge';
-import { getAvatarUrl } from '../../services/api';
+import { getAvatarUrl, apiRequest } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 
 export const TutorCard = ({
   tutor,
@@ -10,8 +12,40 @@ export const TutorCard = ({
   onSave,
   isSaved = false,
   onToggleCompare,
-  isComparing = false
+  isComparing = false,
+  onDelete
 }) => {
+  const { user: authUser } = useAuth();
+  const { showToast } = useToast();
+  const [deleted, setDeleted] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleAdminDelete = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const tutorName = tutor.fullName || tutor.user?.name || 'this tutor';
+    if (!window.confirm(`Admin Action: Permanently delete tutor card for "${tutorName}"? This action cannot be undone.`)) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await apiRequest(`/admin/tutors/${tutor._id}/permanent`, {
+        method: 'DELETE',
+        body: JSON.stringify({ confirmDelete: true })
+      });
+      if (res.success) {
+        showToast(res.message || 'Tutor card deleted successfully', 'success');
+        setDeleted(true);
+        if (onDelete) onDelete(tutor._id);
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to delete tutor card', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (deleted) return null;
   const user = tutor.user || {};
   const fee = tutor.feeStructure?.hourlyRate || 500;
   const isFreeDemo = tutor.demoClassAvailable && tutor.demoClassFee === 0;
@@ -64,18 +98,33 @@ export const TutorCard = ({
             </div>
           </div>
 
-          <button
-            onClick={() => onSave && onSave(tutor._id)}
-            className={`p-2 rounded-xl border transition-colors shrink-0 ${
-              isSaved
-                ? 'bg-rose-50 border-rose-200 text-rose-600'
-                : 'border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-slate-50'
-            }`}
-            title={isSaved ? 'Remove from saved' : 'Save tutor'}
-            aria-label="Save tutor"
-          >
-            <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-500' : ''}`} />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {authUser?.role === 'admin' && (
+              <button
+                type="button"
+                onClick={handleAdminDelete}
+                disabled={deleting}
+                className="p-2 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+                title="Admin: Permanently delete this tutor card"
+                aria-label="Delete tutor card"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+
+            <button
+              onClick={() => onSave && onSave(tutor._id)}
+              className={`p-2 rounded-xl border transition-colors ${
+                isSaved
+                  ? 'bg-rose-50 border-rose-200 text-rose-600'
+                  : 'border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-slate-50'
+              }`}
+              title={isSaved ? 'Remove from saved' : 'Save tutor'}
+              aria-label="Save tutor"
+            >
+              <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-500' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Short Introduction */}
