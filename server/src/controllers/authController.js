@@ -41,7 +41,11 @@ export const register = async (req, res, next) => {
       passwordHash: password,
       role: userRole,
       isEmailVerified: true,
-      isPhoneVerified: true
+      isPhoneVerified: true,
+      lastLogin: new Date(),
+      lastActive: new Date(),
+      loginCount: 1,
+      isOnline: true
     });
 
     let profile = null;
@@ -132,6 +136,12 @@ export const login = async (req, res, next) => {
       profile = await TutorProfile.findOne({ user: user._id });
     }
 
+    user.lastLogin = new Date();
+    user.lastActive = new Date();
+    user.loginCount = (user.loginCount || 0) + 1;
+    user.isOnline = true;
+    await user.save({ validateModifiedOnly: true });
+
     const token = user.generateAuthToken();
 
     res.json({
@@ -145,7 +155,11 @@ export const login = async (req, res, next) => {
         phone: user.phone,
         role: user.role,
         avatar: user.avatar,
-        status: user.status
+        status: user.status,
+        lastLogin: user.lastLogin,
+        loginCount: user.loginCount,
+        lastActive: user.lastActive,
+        isOnline: user.isOnline
       },
       profile
     });
@@ -312,6 +326,36 @@ export const resetPassword = async (req, res, next) => {
       success: true,
       message: `Password reset successfully for ${user.name} (${user.email}). You can now log in with your new password.`
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Heartbeat to keep user presence alive
+export const heartbeat = async (req, res, next) => {
+  try {
+    if (req.user?.id) {
+      await User.findByIdAndUpdate(req.user.id, {
+        lastActive: new Date(),
+        isOnline: true
+      });
+    }
+    res.json({ success: true, timestamp: new Date() });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Logout
+export const logout = async (req, res, next) => {
+  try {
+    if (req.user?.id) {
+      await User.findByIdAndUpdate(req.user.id, {
+        isOnline: false,
+        lastActive: new Date()
+      });
+    }
+    res.json({ success: true, message: 'Logged out successfully.' });
   } catch (err) {
     next(err);
   }

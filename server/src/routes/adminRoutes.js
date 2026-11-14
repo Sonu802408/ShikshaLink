@@ -22,7 +22,8 @@ import {
   inviteNewTutor,
   permanentlyDeleteTutorApplication,
   deleteUser,
-  decideTutorDocument
+  decideTutorDocument,
+  getAdminHirings
 } from '../controllers/adminController.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { ROLES } from '../config/constants.js';
@@ -32,6 +33,7 @@ const router = express.Router();
 router.use(protect, authorize(ROLES.ADMIN));
 
 router.get('/metrics', getAdminMetrics);
+router.get('/hirings', getAdminHirings);
 router.get('/verification-queue', getVerificationQueue);
 router.patch('/qualifications/:id/decide', decideQualification);
 router.patch('/tutors/:tutorId/documents/:docId/decide', decideTutorDocument);

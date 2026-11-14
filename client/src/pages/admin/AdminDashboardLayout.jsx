@@ -9,7 +9,8 @@ import {
   Settings,
   Activity,
   DollarSign,
-  GraduationCap
+  GraduationCap,
+  UserCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -18,6 +19,7 @@ export const AdminDashboardLayout = () => {
 
   const navItems = [
     { to: '/admin', label: 'Platform Metrics', icon: LayoutDashboard, end: true },
+    { to: '/admin/hirings', label: 'Hired Tutors & Hirings', icon: UserCheck },
     { to: '/admin/tutors', label: 'Manage Tutors', icon: GraduationCap },
     { to: '/admin/payments', label: 'Payments & Payouts', icon: DollarSign },
     { to: '/admin/verification', label: 'Verification Queue', icon: ShieldCheck, badge: true },

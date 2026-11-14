@@ -37,6 +37,13 @@ export const protect = async (req, res, next) => {
     }
 
     req.user = user;
+
+    // Asynchronously refresh lastActive and online state (throttled to once per minute)
+    const now = new Date();
+    if (!user.lastActive || (now.getTime() - new Date(user.lastActive).getTime() > 60000)) {
+      User.findByIdAndUpdate(user._id, { lastActive: now, isOnline: true }).exec().catch(() => {});
+    }
+
     next();
   } catch (err) {
     return res.status(401).json({

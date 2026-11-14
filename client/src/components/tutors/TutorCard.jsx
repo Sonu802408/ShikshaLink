@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Star, MapPin, Clock, Heart, Sparkles, Code2, Globe, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Star, MapPin, Clock, Heart, Sparkles, Code2, Globe, Trash2, CalendarCheck, Pencil } from 'lucide-react';
 import { VerificationBadge, TeachingModeBadge } from '../common/Badge';
 import { getAvatarUrl, apiRequest } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { BookingModal } from '../bookings/BookingModal';
 
 export const TutorCard = ({
   tutor,
@@ -15,10 +16,35 @@ export const TutorCard = ({
   isComparing = false,
   onDelete
 }) => {
+  const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const { showToast } = useToast();
   const [deleted, setDeleted] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isSelfBookingOpen, setIsSelfBookingOpen] = useState(false);
+
+  const isParent = authUser?.role === 'parent';
+
+  const handleBookTutor = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!authUser) {
+      showToast('Please sign in or create a parent account to book tuition.', 'info');
+      navigate('/login');
+      return;
+    }
+    if (authUser.role === 'tutor') {
+      showToast('Tutor accounts cannot book other tutors. Please log in as a parent.', 'info');
+      return;
+    }
+    if (onBook) {
+      onBook(tutor);
+    } else {
+      setIsSelfBookingOpen(true);
+    }
+  };
 
   const handleAdminDelete = async (e) => {
     e.preventDefault();
@@ -101,16 +127,27 @@ export const TutorCard = ({
 
           <div className="flex items-center gap-1.5 shrink-0">
             {authUser?.role === 'admin' && (
-              <button
-                type="button"
-                onClick={handleAdminDelete}
-                disabled={deleting}
-                className="p-2 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
-                title="Admin: Permanently delete this tutor card"
-                aria-label="Delete tutor card"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <>
+                <Link
+                  to={`/tutor/profile?id=${tutor._id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-2 rounded-xl border border-teal-300 bg-teal-50 hover:bg-teal-100 text-teal-700 hover:text-teal-800 transition-colors cursor-pointer shadow-2xs"
+                  title="Admin: Edit this tutor profile & rates"
+                  aria-label="Edit tutor card"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleAdminDelete}
+                  disabled={deleting}
+                  className="p-2 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+                  title="Admin: Permanently delete this tutor card"
+                  aria-label="Delete tutor card"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
             )}
 
             <button
@@ -223,9 +260,9 @@ export const TutorCard = ({
         </div>
       </div>
 
-      {/* Footer bar: Rating, Pricing, View Full Profile, and Book Tutor */}
-      <div className="px-4 sm:px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-        <div className="shrink-0">
+      {/* Footer bar: Rating, Pricing, and Action Buttons */}
+      <div className="px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+        <div className="shrink-0 flex items-center gap-3">
           {tutor.reviewCount > 0 ? (
             <div className="flex items-center gap-1">
               <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-50 border border-amber-200 rounded-md font-bold text-xs text-amber-800">
@@ -242,33 +279,48 @@ export const TutorCard = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {onToggleCompare && (
-            <label className="hidden sm:flex items-center gap-1 text-[11px] font-medium text-slate-600 cursor-pointer select-none mr-1">
-              <input
-                type="checkbox"
-                checked={isComparing}
-                onChange={() => onToggleCompare(tutor)}
-                className="w-3.5 h-3.5 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
-              />
-              Compare
-            </label>
-          )}
-
-          <Link
-            to={`/tutors/${tutor._id}`}
-            className="px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-teal-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-all text-center whitespace-nowrap"
-          >
-            View Full Profile
-          </Link>
-          <button
-            onClick={() => onBook && onBook(tutor)}
-            className="px-3 sm:px-3.5 py-1.5 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-sm transition-all whitespace-nowrap"
-          >
-            Book Tutor
-          </button>
-        </div>
+        {onToggleCompare && (
+          <label className="hidden sm:flex items-center gap-1 text-[11px] font-medium text-slate-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isComparing}
+              onChange={() => onToggleCompare(tutor)}
+              className="w-3.5 h-3.5 text-teal-600 rounded border-slate-300 focus:ring-teal-500"
+            />
+            Compare
+          </label>
+        )}
       </div>
+
+      {/* Dedicated Dual Action Buttons */}
+      <div className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
+        <Link
+          to={`/tutors/${tutor._id}`}
+          className="flex-1 py-2 text-center text-xs font-bold text-slate-700 hover:text-teal-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all shadow-2xs"
+        >
+          View Full Profile
+        </Link>
+        <button
+          type="button"
+          onClick={handleBookTutor}
+          className="flex-1 py-2 text-center text-xs font-black text-white bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <CalendarCheck className="w-3.5 h-3.5" />
+          <span>Book Tutor</span>
+        </button>
+      </div>
+
+      {/* Standalone Booking Modal fallback if onBook was not passed */}
+      {isSelfBookingOpen && (
+        <BookingModal
+          tutor={tutor}
+          onClose={() => setIsSelfBookingOpen(false)}
+          onBookingSuccess={() => {
+            setIsSelfBookingOpen(false);
+            showToast('Tuition booking request sent successfully!', 'success');
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, UserX, UserCheck, ShieldAlert, ArrowUpDown, Trash2 } from 'lucide-react';
+import { Users, Search, UserX, UserCheck, ShieldAlert, ArrowUpDown, Trash2, Activity, Clock } from 'lucide-react';
 import { apiRequest } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
@@ -10,6 +10,7 @@ export const AdminUsers = () => {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [activityFilter, setActivityFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -20,6 +21,8 @@ export const AdminUsers = () => {
       if (search) params.append('search', search);
       if (roleFilter) params.append('role', roleFilter);
       if (statusFilter) params.append('status', statusFilter);
+      if (activityFilter === 'live') params.append('liveOnly', 'true');
+      if (activityFilter === 'logged_in') params.append('loggedInOnly', 'true');
       params.append('page', page);
 
       const res = await apiRequest(`/admin/users?${params.toString()}`);
@@ -36,7 +39,7 @@ export const AdminUsers = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [search, roleFilter, statusFilter, page]);
+  }, [search, roleFilter, statusFilter, activityFilter, page]);
 
   const handleToggleStatus = async (userId, currentStatus) => {
     const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
@@ -79,12 +82,27 @@ export const AdminUsers = () => {
     }
   };
 
+  const isUserLive = (u) => {
+    if (!u.lastActive && !u.isOnline) return false;
+    const diff = Date.now() - new Date(u.lastActive).getTime();
+    return u.isOnline || diff < 10 * 60 * 1000;
+  };
+
+  const formatLastActive = (date) => {
+    if (!date) return 'Never';
+    const diff = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-slate-900">User Management</h1>
+        <h1 className="text-2xl font-black text-slate-900">User Management & Login Audit</h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Audit parent and tutor user accounts, verify status, and enforce account policies
+          Audit parent and tutor user accounts, verify login frequency, real-time online status, and enforce account policies
         </p>
       </div>
 
@@ -97,9 +115,22 @@ export const AdminUsers = () => {
             placeholder="Search by name, email, or phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-300 text-xs font-medium"
+            className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:ring-2 focus:ring-teal-500 focus:outline-none"
           />
         </div>
+
+        <select
+          value={activityFilter}
+          onChange={(e) => {
+            setActivityFilter(e.target.value);
+            setPage(1);
+          }}
+          className="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 w-full sm:w-auto focus:ring-2 focus:ring-teal-500 focus:outline-none"
+        >
+          <option value="">All Activity</option>
+          <option value="live">🟢 Live Now Only</option>
+          <option value="logged_in">Logged In Only</option>
+        </select>
 
         <select
           value={roleFilter}
@@ -107,7 +138,7 @@ export const AdminUsers = () => {
             setRoleFilter(e.target.value);
             setPage(1);
           }}
-          className="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 w-full sm:w-auto"
+          className="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 w-full sm:w-auto focus:ring-2 focus:ring-teal-500 focus:outline-none"
         >
           <option value="">All Roles</option>
           <option value="parent">Parents</option>
@@ -121,7 +152,7 @@ export const AdminUsers = () => {
             setStatusFilter(e.target.value);
             setPage(1);
           }}
-          className="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 w-full sm:w-auto"
+          className="px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 w-full sm:w-auto focus:ring-2 focus:ring-teal-500 focus:outline-none"
         >
           <option value="">All Statuses</option>
           <option value="active">Active</option>
@@ -138,6 +169,7 @@ export const AdminUsers = () => {
                 <th className="py-3 px-4">User</th>
                 <th className="py-3 px-4">Contact</th>
                 <th className="py-3 px-4">Role</th>
+                <th className="py-3 px-4">Presence / Login</th>
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4">Joined</th>
                 <th className="py-3 px-4 text-right">Action</th>
@@ -146,71 +178,92 @@ export const AdminUsers = () => {
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-400">Loading users...</td>
+                  <td colSpan={7} className="p-8 text-center text-slate-400">Loading users...</td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-400">No users found.</td>
+                  <td colSpan={7} className="p-8 text-center text-slate-400">No users found.</td>
                 </tr>
               ) : (
-                users.map((u) => (
-                  <tr key={u._id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900">{u.name}</div>
-                      <div className="text-[11px] text-slate-400">{u._id}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div>{u.email}</div>
-                      <div className="text-[11px] text-slate-400">{u.phone}</div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded-md font-bold uppercase text-[10px] ${
-                        u.role === 'admin'
-                          ? 'bg-purple-50 text-purple-800 border border-purple-200'
-                          : u.role === 'tutor'
-                          ? 'bg-teal-50 text-teal-800 border border-teal-200'
-                          : 'bg-sky-50 text-sky-800 border border-sky-200'
-                      }`}>
-                        {u.role}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
-                        u.status === 'active'
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          : 'bg-rose-50 text-rose-800 border border-rose-200'
-                      }`}>
-                        {u.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-500">
-                      {new Date(u.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {u.role !== 'admin' && (
+                users.map((u) => {
+                  const live = isUserLive(u);
+
+                  return (
+                    <tr key={u._id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${live ? 'bg-emerald-500 ring-4 ring-emerald-100 animate-pulse' : 'bg-slate-300'}`} title={live ? 'Online Now' : 'Offline'} />
+                          <div>
+                            <div className="font-bold text-slate-900">{u.name}</div>
+                            <div className="text-[11px] text-slate-400">{u._id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div>{u.email}</div>
+                        <div className="text-[11px] text-slate-400">{u.phone}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded-md font-bold uppercase text-[10px] ${
+                          u.role === 'admin'
+                            ? 'bg-purple-50 text-purple-800 border border-purple-200'
+                            : u.role === 'tutor'
+                            ? 'bg-teal-50 text-teal-800 border border-teal-200'
+                            : 'bg-sky-50 text-sky-800 border border-sky-200'
+                        }`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          {live ? (
+                            <span className="text-[11px] font-bold text-emerald-600">🟢 Live Now</span>
+                          ) : (
+                            <span className="text-[11px] text-slate-500">{formatLastActive(u.lastActive || u.lastLogin)}</span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-400">
+                          {u.loginCount ? `${u.loginCount} logins` : 'No logins yet'}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[10px] ${
+                          u.status === 'active'
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            : 'bg-rose-50 text-rose-800 border border-rose-200'
+                        }`}>
+                          {u.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-slate-500">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {u.role !== 'admin' && (
+                            <button
+                              onClick={() => handleToggleStatus(u._id, u.status)}
+                              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                u.status === 'active'
+                                  ? 'border border-rose-200 text-rose-600 hover:bg-rose-50'
+                                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                              }`}
+                            >
+                              {u.status === 'active' ? 'Suspend' : 'Activate'}
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleToggleStatus(u._id, u.status)}
-                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              u.status === 'active'
-                                ? 'border border-rose-200 text-rose-600 hover:bg-rose-50'
-                                : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                            }`}
+                            onClick={() => handleDeleteUser(u)}
+                            className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title={`Permanently delete user ${u.name}`}
                           >
-                            {u.status === 'active' ? 'Suspend' : 'Activate'}
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteUser(u)}
-                          className="p-1.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                          title={`Permanently delete user ${u.name}`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

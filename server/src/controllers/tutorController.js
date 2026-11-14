@@ -203,11 +203,21 @@ export const calculateProfileCompletion = (profile, qualifications = []) => {
   return Math.min(100, Math.round((score / total) * 100));
 };
 
-// Get current tutor profile (logged in)
+// Get current tutor profile (logged in, or requested by admin)
 export const getMyTutorProfile = async (req, res, next) => {
   try {
-    let profile = await TutorProfile.findOne({ user: req.user.id }).populate('user', 'name email phone avatar isEmailVerified isPhoneVerified role');
+    let profile;
+    const targetTutorId = req.query.tutorId;
+    if (targetTutorId && req.user.role === ROLES.ADMIN) {
+      profile = await TutorProfile.findById(targetTutorId).populate('user', 'name email phone avatar isEmailVerified isPhoneVerified role');
+    } else {
+      profile = await TutorProfile.findOne({ user: req.user.id }).populate('user', 'name email phone avatar isEmailVerified isPhoneVerified role');
+    }
+
     if (!profile) {
+      if (targetTutorId && req.user.role === ROLES.ADMIN) {
+        return res.status(404).json({ success: false, message: 'Tutor profile not found' });
+      }
       profile = await TutorProfile.create({
         user: req.user.id,
         fullName: req.user.name || '',
@@ -846,12 +856,21 @@ export const deleteTutorDocument = async (req, res, next) => {
   }
 };
 
-// Update current tutor profile
+// Update current tutor profile (logged in, or requested by admin)
 export const updateMyTutorProfile = async (req, res, next) => {
   try {
-    let profile = await TutorProfile.findOne({ user: req.user.id });
-    if (!profile) {
-      profile = new TutorProfile({ user: req.user.id });
+    let profile;
+    const targetTutorId = req.query.tutorId || req.body.tutorId;
+    if (targetTutorId && req.user.role === ROLES.ADMIN) {
+      profile = await TutorProfile.findById(targetTutorId);
+      if (!profile) {
+        return res.status(404).json({ success: false, message: 'Tutor profile not found' });
+      }
+    } else {
+      profile = await TutorProfile.findOne({ user: req.user.id });
+      if (!profile) {
+        profile = new TutorProfile({ user: req.user.id });
+      }
     }
 
     const {
@@ -936,15 +955,18 @@ export const updateMyTutorProfile = async (req, res, next) => {
       } catch (encodeErr) {
         console.warn('Avatar base64 encoding error:', encodeErr.message);
       }
-      await User.findByIdAndUpdate(req.user.id, { avatar: effectiveAvatar });
+      const targetUserId = profile.user || req.user.id;
+      await User.findByIdAndUpdate(targetUserId, { avatar: effectiveAvatar });
       profile.avatar = effectiveAvatar;
     } else if (req.body.avatar && typeof req.body.avatar === 'string' && req.body.avatar.trim() && !req.body.avatar.startsWith('blob:')) {
+      const targetUserId = profile.user || req.user.id;
       profile.avatar = req.body.avatar;
-      await User.findByIdAndUpdate(req.user.id, { avatar: req.body.avatar });
+      await User.findByIdAndUpdate(targetUserId, { avatar: req.body.avatar });
     } else {
-      const currentUser = await User.findById(req.user.id);
-      if (currentUser?.avatar && !profile.avatar) {
-        profile.avatar = currentUser.avatar;
+      const targetUserId = profile.user || req.user.id;
+      const targetUser = await User.findById(targetUserId);
+      if (targetUser?.avatar && !profile.avatar) {
+        profile.avatar = targetUser.avatar;
       }
     }
 
@@ -981,7 +1003,14 @@ export const uploadTutorAvatar = async (req, res, next) => {
     }
 
     // Ensure TutorProfile exists or is upserted
-    let profile = await TutorProfile.findOne({ user: req.user.id });
+    let profile;
+    const targetTutorId = req.query.tutorId || req.body.tutorId;
+    if (targetTutorId && req.user.role === ROLES.ADMIN) {
+      profile = await TutorProfile.findById(targetTutorId);
+    } else {
+      profile = await TutorProfile.findOne({ user: req.user.id });
+    }
+
     if (!profile) {
       profile = await TutorProfile.create({
         user: req.user.id,
@@ -995,8 +1024,9 @@ export const uploadTutorAvatar = async (req, res, next) => {
       await profile.save();
     }
 
+    const targetUserId = profile.user || req.user.id;
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      targetUserId,
       { avatar: effectiveAvatar },
       { new: true }
     );

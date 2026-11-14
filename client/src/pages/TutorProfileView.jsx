@@ -166,13 +166,13 @@ export const TutorProfileView = () => {
           </Link>
 
           <div className="flex items-center gap-2">
-            {isOwnProfile && (
+            {(isOwnProfile || role === 'admin') && (
               <Link
-                to="/tutor/profile"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-700 border border-teal-200 text-xs font-bold hover:bg-teal-100 transition-all"
+                to={`/tutor/profile?id=${tutor._id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-700 border border-teal-200 text-xs font-bold hover:bg-teal-100 transition-all shadow-2xs"
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                Edit Profile Settings
+                <span>{role === 'admin' && !isOwnProfile ? 'Admin: Edit Profile' : 'Edit Profile Settings'}</span>
               </Link>
             )}
             <button
@@ -694,21 +694,23 @@ export const TutorProfileView = () => {
               </button>
             </div>
 
-            {/* Profile Management Quick card if this is the logged in tutor */}
-            {isOwnProfile && (
+            {/* Profile Management Quick card if this is the logged in tutor or Admin */}
+            {(isOwnProfile || role === 'admin') && (
               <div className="bg-gradient-to-br from-teal-50 to-sky-50 rounded-3xl border border-teal-200 p-6 space-y-3">
                 <div className="flex items-center gap-2 font-bold text-teal-950 text-sm">
                   <Edit3 className="w-4 h-4 text-teal-700" />
-                  Your Profile Management
+                  {role === 'admin' && !isOwnProfile ? 'Admin Profile Management' : 'Your Profile Management'}
                 </div>
                 <p className="text-xs text-teal-800 leading-relaxed">
-                  You are viewing your own public tutor profile. You can edit your bio, upload/replace your profile photo, manage classes, and adjust rates at any time.
+                  {role === 'admin' && !isOwnProfile
+                    ? 'As Administrator, you have full permissions to edit this tutor profile, replace photo, adjust pricing, and manage subject offerings.'
+                    : 'You are viewing your own public tutor profile. You can edit your bio, upload/replace your profile photo, manage classes, and adjust rates at any time.'}
                 </p>
                 <Link
-                  to="/tutor/profile"
+                  to={`/tutor/profile?id=${tutor._id}`}
                   className="block w-full py-2.5 text-center rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-sm transition-all"
                 >
-                  Go to Profile Settings & Photo Upload
+                  {role === 'admin' && !isOwnProfile ? 'Open Admin Profile Editor & Photo' : 'Go to Profile Settings & Photo Upload'}
                 </Link>
               </div>
             )}

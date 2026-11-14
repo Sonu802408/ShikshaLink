@@ -56,6 +56,22 @@ const userSchema = new Schema(
       type: String,
       default: ''
     },
+    lastLogin: {
+      type: Date,
+      default: null
+    },
+    loginCount: {
+      type: Number,
+      default: 0
+    },
+    lastActive: {
+      type: Date,
+      default: Date.now
+    },
+    isOnline: {
+      type: Boolean,
+      default: false
+    },
     passwordResetToken: String,
     passwordResetExpires: Date
   },

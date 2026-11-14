@@ -7,6 +7,7 @@ import { PlatformSettings } from '../src/models/PlatformSettings.js';
 import { Payment } from '../src/models/Payment.js';
 import { Booking } from '../src/models/Booking.js';
 import { User } from '../src/models/User.js';
+import { TutorProfile } from '../src/models/TutorProfile.js';
 import { TEACHING_MODES, PAYMENT_STATUSES, BOOKING_STATUSES } from '../src/config/constants.js';
 
 describe('Online Payments, Admin UPI/QR Settings, and Checkout Verification Tests', () => {
@@ -81,10 +82,19 @@ describe('Online Payments, Admin UPI/QR Settings, and Checkout Verification Test
       .set('Authorization', `Bearer ${tutorToken}`)
       .send({
         fullName: 'Vikram Joshi',
-        hourlyFee: 600,
+        hourlyFee: 500,
         subjects: ['Mathematics'],
+        teachingModes: [TEACHING_MODES.ONLINE],
         termsAccepted: true
       });
+
+    // Mark tutor as approved and accepting students for test
+    await TutorProfile.findByIdAndUpdate(tutorProfileId, {
+      isPublished: true,
+      isAcceptingStudents: true,
+      applicationStatus: 'approved',
+      teachingModes: [TEACHING_MODES.ONLINE]
+    });
 
     // 3. Ensure and Login Admin
     let adminDoc = await User.findOne({ email: 'admin@shikshalink.in' });

@@ -48,6 +48,7 @@ import { TutorCartPage } from './pages/tutor/TutorCartPage';
 // Admin Dashboard Pages
 import { AdminDashboardLayout } from './pages/admin/AdminDashboardLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminHirings } from './pages/admin/AdminHirings';
 import { AdminManageTutors } from './pages/admin/AdminManageTutors';
 import { AdminVerificationQueue } from './pages/admin/AdminVerificationQueue';
 import { AdminUsers } from './pages/admin/AdminUsers';
@@ -174,6 +175,7 @@ export default function App() {
                     }
                   >
                     <Route index element={<AdminDashboard />} />
+                    <Route path="hirings" element={<AdminHirings />} />
                     <Route path="tutors" element={<AdminManageTutors />} />
                     <Route path="payments" element={<AdminPayments />} />
                     <Route path="verification" element={<AdminVerificationQueue />} />

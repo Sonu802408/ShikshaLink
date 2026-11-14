@@ -40,6 +40,15 @@ export const AuthProvider = ({ children }) => {
     refreshUser();
   }, [refreshUser]);
 
+  // Periodic heartbeat while logged in to maintain active online presence
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      apiRequest('/auth/heartbeat', { method: 'POST' }).catch(() => {});
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   const login = async (email, password) => {
     const data = await apiRequest('/auth/login', {
       method: 'POST',
@@ -62,7 +71,12 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiRequest('/auth/logout', { method: 'POST' });
+    } catch (e) {
+      // Ignore network errors on logout
+    }
     setStoredToken(null);
     setUser(null);
     setProfile(null);

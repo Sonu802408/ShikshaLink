@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Save,
   Laptop,
@@ -26,6 +26,9 @@ import { useAuth } from '../../context/AuthContext';
 export const TutorProfileEdit = () => {
   const { user, refreshUser } = useAuth();
   const { showToast } = useToast();
+  const [searchParams] = useSearchParams();
+  const tutorIdParam = searchParams.get('id');
+  const isAdminEditing = Boolean(tutorIdParam && user?.role === 'admin');
   const fileInputRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
@@ -33,6 +36,7 @@ export const TutorProfileEdit = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [selectedPhotoFile, setSelectedPhotoFile] = useState(null);
+  const [targetTutorUser, setTargetTutorUser] = useState(null);
 
   // Profile Identity & Headline
   const [professionalTitle, setProfessionalTitle] = useState('');
@@ -95,9 +99,13 @@ export const TutorProfileEdit = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await apiRequest('/tutors/profile/me');
+        const query = (tutorIdParam && user?.role === 'admin') ? `?tutorId=${tutorIdParam}` : '';
+        const res = await apiRequest(`/tutors/profile/me${query}`);
         if (res.success && res.profile) {
           const p = res.profile;
+          if (p.user) {
+            setTargetTutorUser(p.user);
+          }
           setProfileId(p._id);
           setProfessionalTitle(p.professionalTitle || '');
           setHeadline(p.headline || '');
@@ -164,7 +172,7 @@ export const TutorProfileEdit = () => {
       }
     };
     fetchProfile();
-  }, [showToast, user]);
+  }, [showToast, user, tutorIdParam]);
 
   const handlePhotoSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -190,7 +198,8 @@ export const TutorProfileEdit = () => {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const res = await apiRequest('/tutors/avatar', {
+      const query = (tutorIdParam && user?.role === 'admin') ? `?tutorId=${tutorIdParam}` : '';
+      const res = await apiRequest(`/tutors/avatar${query}`, {
         method: 'POST',
         body: formData
       });
@@ -221,7 +230,8 @@ export const TutorProfileEdit = () => {
       const formData = new FormData();
       formData.append('avatar', selectedPhotoFile);
 
-      const res = await apiRequest('/tutors/avatar', {
+      const query = (tutorIdParam && user?.role === 'admin') ? `?tutorId=${tutorIdParam}` : '';
+      const res = await apiRequest(`/tutors/avatar${query}`, {
         method: 'POST',
         body: formData
       });
@@ -327,7 +337,8 @@ export const TutorProfileEdit = () => {
         demoClassFee: Number(demoClassFee)
       };
 
-      const res = await apiRequest('/tutors/profile/me', {
+      const query = (tutorIdParam && user?.role === 'admin') ? `?tutorId=${tutorIdParam}` : '';
+      const res = await apiRequest(`/tutors/profile/me${query}`, {
         method: 'PUT',
         body: JSON.stringify(payload)
       });
@@ -348,6 +359,32 @@ export const TutorProfileEdit = () => {
 
   return (
     <form onSubmit={handleSave} className="space-y-6">
+      {isAdminEditing && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center font-bold">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-700 block">
+                Administrator Edit Mode
+              </span>
+              <p className="text-xs font-semibold text-slate-800">
+                You are modifying the live profile and pricing card for: <strong>{targetTutorUser?.name || 'Tutor'}</strong>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/find-tutors"
+              className="px-3 py-1.5 rounded-xl border border-amber-300 bg-white hover:bg-amber-50 text-amber-900 font-bold text-xs transition-colors"
+            >
+              Back to Tutors
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -24,25 +24,84 @@ import { BOOKING_STATUSES } from '../config/constants.js';
 // Platform Analytics & Metrics
 export const getAdminMetrics = async (req, res, next) => {
   try {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
     const [
       totalUsers,
       totalParents,
       totalTutors,
+      parentsLoggedIn,
+      tutorsLoggedIn,
+      liveParents,
+      liveTutors,
+      totalLiveUsers,
       pendingVerifications,
       totalRequirements,
       totalBookings,
       confirmedBookings,
       completedBookings,
+      parentsWhoBooked,
+      hiredTutorsCount,
+      totalHires,
       openComplaints
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ role: 'parent' }),
       User.countDocuments({ role: 'tutor' }),
+      // Parents who have logged in (loginCount > 0 or lastLogin not null)
+      User.countDocuments({
+        role: 'parent',
+        $or: [
+          { loginCount: { $gt: 0 } },
+          { lastLogin: { $ne: null } }
+        ]
+      }),
+      // Tutors who have logged in
+      User.countDocuments({
+        role: 'tutor',
+        $or: [
+          { loginCount: { $gt: 0 } },
+          { lastLogin: { $ne: null } }
+        ]
+      }),
+      // Live Parents (active in last 10 minutes or marked online)
+      User.countDocuments({
+        role: 'parent',
+        $or: [
+          { lastActive: { $gte: tenMinutesAgo } },
+          { isOnline: true }
+        ]
+      }),
+      // Live Tutors
+      User.countDocuments({
+        role: 'tutor',
+        $or: [
+          { lastActive: { $gte: tenMinutesAgo } },
+          { isOnline: true }
+        ]
+      }),
+      // Total Live Users
+      User.countDocuments({
+        $or: [
+          { lastActive: { $gte: tenMinutesAgo } },
+          { isOnline: true }
+        ]
+      }),
       TutorQualification.countDocuments({ verificationStatus: 'pending' }),
       TuitionRequirement.countDocuments(),
       Booking.countDocuments(),
       Booking.countDocuments({ status: BOOKING_STATUSES.CONFIRMED }),
       Booking.countDocuments({ status: { $in: [BOOKING_STATUSES.COMPLETED, BOOKING_STATUSES.DEMO_COMPLETED] } }),
+      // Distinct parent users who made at least 1 booking
+      Booking.distinct('parentUser').then(ids => ids.length),
+      // Distinct tutors who have been hired
+      Booking.distinct('tutorUser', {
+        status: { $in: ['accepted', 'awaiting_payment', 'confirmed', 'demo_completed', 'in_progress', 'completed'] }
+      }).then(ids => ids.length),
+      // Total bookings representing a hire contract
+      Booking.countDocuments({
+        status: { $in: ['accepted', 'awaiting_payment', 'confirmed', 'demo_completed', 'in_progress', 'completed'] }
+      }),
       SupportTicket.countDocuments({ status: 'open' })
     ]);
 
@@ -52,11 +111,19 @@ export const getAdminMetrics = async (req, res, next) => {
         totalUsers,
         totalParents,
         totalTutors,
+        parentsLoggedIn,
+        tutorsLoggedIn,
+        liveParents,
+        liveTutors,
+        totalLiveUsers,
         pendingVerifications,
         totalRequirements,
         totalBookings,
         confirmedBookings,
         completedBookings,
+        parentsWhoBooked,
+        hiredTutorsCount,
+        totalHires,
         openComplaints
       }
     });
@@ -307,23 +374,39 @@ export const updateTutorBadges = async (req, res, next) => {
   }
 };
 
-// Manage Users: List users with filters
+// Manage Users: List users with filters (including live status and login activity)
 export const getAllUsers = async (req, res, next) => {
   try {
-    const { role, status, search, page = 1, limit = 20 } = req.query;
+    const { role, status, liveOnly, loggedInOnly, search, page = 1, limit = 20 } = req.query;
     const query = {};
 
     if (role) query.role = role;
     if (status) query.status = status;
+
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    if (liveOnly === 'true') {
+      query.$or = [
+        { lastActive: { $gte: tenMinutesAgo } },
+        { isOnline: true }
+      ];
+    }
+
+    if (loggedInOnly === 'true') {
+      query.$or = [
+        { loginCount: { $gt: 0 } },
+        { lastLogin: { $ne: null } }
+      ];
+    }
+
     if (search) {
-      const regex = new RegExp(search, 'i');
+      const regex = new RegExp(search.trim(), 'i');
       query.$or = [{ name: regex }, { email: regex }, { phone: regex }];
     }
 
     const total = await User.countDocuments(query);
     const users = await User.find(query)
       .select('-passwordHash')
-      .sort({ createdAt: -1 })
+      .sort({ lastActive: -1, createdAt: -1 })
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
 
@@ -333,6 +416,71 @@ export const getAllUsers = async (req, res, next) => {
       page: Number(page),
       totalPages: Math.ceil(total / Number(limit)),
       users
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Get Hired Tutors & Parent Hiring Relationships (Tutors hired and parent hirers directory)
+export const getAdminHirings = async (req, res, next) => {
+  try {
+    const { status, search, page = 1, limit = 20 } = req.query;
+    const hiredStatuses = [
+      BOOKING_STATUSES.ACCEPTED,
+      BOOKING_STATUSES.AWAITING_PAYMENT,
+      BOOKING_STATUSES.CONFIRMED,
+      BOOKING_STATUSES.DEMO_COMPLETED,
+      BOOKING_STATUSES.IN_PROGRESS,
+      BOOKING_STATUSES.COMPLETED
+    ];
+
+    const query = {};
+    if (status && status !== 'all') {
+      query.status = status;
+    } else {
+      query.status = { $in: hiredStatuses };
+    }
+
+    if (search && search.trim()) {
+      const regex = new RegExp(search.trim(), 'i');
+      query.$or = [
+        { subject: regex },
+        { classGrade: regex },
+        { 'childSnapshot.fullName': regex },
+        { 'parentSnapshot.fullName': regex },
+        { 'parentSnapshot.email': regex },
+        { 'parentSnapshot.phone': regex }
+      ];
+    }
+
+    const total = await Booking.countDocuments(query);
+    const hirings = await Booking.find(query)
+      .populate('tutorUser', 'name email phone avatar lastLogin lastActive isOnline')
+      .populate('tutorProfile', 'headline applicationId city primaryLocality subjects classes feeStructure averageRating reviewCount verificationBadges')
+      .populate('parentUser', 'name email phone avatar lastLogin lastActive isOnline')
+      .populate('parentProfile', 'city locality address pincode')
+      .populate('child', 'fullName classGrade board school subjects')
+      .sort({ createdAt: -1 })
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit));
+
+    const [uniqueHiredTutors, uniqueParentsWhoHired] = await Promise.all([
+      Booking.distinct('tutorUser', { status: { $in: hiredStatuses } }),
+      Booking.distinct('parentUser', { status: { $in: hiredStatuses } })
+    ]);
+
+    res.json({
+      success: true,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / Number(limit)),
+      stats: {
+        totalHirings: total,
+        uniqueHiredTutorsCount: uniqueHiredTutors.length,
+        uniqueParentsWhoHiredCount: uniqueParentsWhoHired.length
+      },
+      hirings
     });
   } catch (err) {
     next(err);
