@@ -319,18 +319,14 @@ export const TutorRegistrationWizard = () => {
             setCompletionPercentage(res.profileCompletion);
           }
 
-          // If tutor already published and no specific step requested, redirect to dashboard
-          if (p.profileStatus === 'published' && !searchParams.get('step')) {
-            navigate('/tutor', { replace: true });
-            return;
-          }
-
           // If step query param provided, honor it, otherwise resume at saved step
           const stepParam = parseInt(searchParams.get('step'), 10);
           if (stepParam >= 1 && stepParam <= 9) {
             setCurrentStep(stepParam);
           } else if (p.registrationStep >= 1 && p.registrationStep <= 9) {
             setCurrentStep(p.registrationStep);
+          } else {
+            setCurrentStep(1);
           }
         }
       } catch (err) {

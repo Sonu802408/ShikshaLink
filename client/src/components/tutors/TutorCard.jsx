@@ -24,6 +24,12 @@ export const TutorCard = ({
   const [isSelfBookingOpen, setIsSelfBookingOpen] = useState(false);
 
   const isParent = authUser?.role === 'parent';
+  const isOwnCard = Boolean(
+    authUser && (
+      String(tutor.user?._id || tutor.user?.id || tutor.user) === String(authUser._id || authUser.id)
+    )
+  );
+  const canEditCard = authUser?.role === 'admin' || isOwnCard;
 
   const handleBookTutor = (e) => {
     if (e) {
@@ -126,28 +132,28 @@ export const TutorCard = ({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {canEditCard && (
+              <Link
+                to={isOwnCard && authUser?.role !== 'admin' ? '/tutor/profile' : `/tutor/profile?id=${tutor._id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="p-2 rounded-xl border border-teal-300 bg-teal-50 hover:bg-teal-100 text-teal-700 hover:text-teal-800 transition-colors cursor-pointer shadow-2xs"
+                title={isOwnCard ? "Edit your tutor profile & rates" : "Admin: Edit this tutor profile & rates"}
+                aria-label="Edit tutor card"
+              >
+                <Pencil className="w-4 h-4" />
+              </Link>
+            )}
             {authUser?.role === 'admin' && (
-              <>
-                <Link
-                  to={`/tutor/profile?id=${tutor._id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="p-2 rounded-xl border border-teal-300 bg-teal-50 hover:bg-teal-100 text-teal-700 hover:text-teal-800 transition-colors cursor-pointer shadow-2xs"
-                  title="Admin: Edit this tutor profile & rates"
-                  aria-label="Edit tutor card"
-                >
-                  <Pencil className="w-4 h-4" />
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleAdminDelete}
-                  disabled={deleting}
-                  className="p-2 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
-                  title="Admin: Permanently delete this tutor card"
-                  aria-label="Delete tutor card"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={handleAdminDelete}
+                disabled={deleting}
+                className="p-2 rounded-xl border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+                title="Admin: Permanently delete this tutor card"
+                aria-label="Delete tutor card"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             )}
 
             <button

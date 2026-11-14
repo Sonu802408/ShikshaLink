@@ -213,13 +213,19 @@ export const TutorCartPage = () => {
         </div>
 
         {app && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => navigate('/tutor/register')}
+              onClick={() => navigate('/tutor/profile')}
               className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit Application</span>
+              <span>Edit Profile & Rates</span>
+            </button>
+            <button
+              onClick={() => navigate('/tutor/register?step=1')}
+              className="px-4 py-2.5 rounded-xl border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-800 font-bold text-xs flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            >
+              <span>Edit Application Wizard</span>
             </button>
           </div>
         )}
@@ -701,11 +707,19 @@ export const TutorCartPage = () => {
 
                 <button
                   type="button"
-                  onClick={() => navigate('/tutor/register')}
+                  onClick={() => navigate('/tutor/profile')}
                   className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>Edit Application</span>
+                  <span>Edit Profile & Rates</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/tutor/register?step=1')}
+                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <span>Edit Wizard</span>
                 </button>
               </div>
 
